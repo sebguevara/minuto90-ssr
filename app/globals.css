@@ -1,26 +1,476 @@
-@import "tailwindcss";
+@import 'tailwindcss';
+@import 'tw-animate-css';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+:root {
+  --radius: 0.625rem;
+
+  --background: #f5f7fa;
+  --foreground: #19314f;
+
+  --card: #e4e4e4;
+  --card-secondary: #f5f7fa;
+  --card-foreground: #19314f;
+
+  --popover: #ffffff;
+  --popover-foreground: #19314f;
+
+  --text-white: #fafafa;
+  --text-black: #030712;
+
+  --primary: #00b2ff;
+  --primary-foreground: #ffffff;
+
+  --secondary: #19314f;
+  --secondary-foreground: #ffffff;
+
+  --muted: #c7cacf;
+  --muted-foreground: #334456;
+
+  --accent: #00b2ff;
+  --accent-foreground: #ffffff;
+
+  --destructive: #ef4444;
+  --live: #ef4444;
+
+  --border: #e1e7ed;
+  --input: #ffffff;
+  --ring: #00b2ff;
+
+  --chart-1: #00b2ff;
+  --chart-2: #19314f;
+  --chart-3: #10b981;
+  --chart-4: #ef4444;
+  --chart-5: #f59e0b;
+
+  --sidebar: #19314f;
+  --sidebar-foreground: #ffffff;
+  --sidebar-primary: #00b2ff;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #6f8cab;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #6f8cab;
+  --sidebar-ring: #00b2ff;
+
+  --match-live-bg: #560006;
+  --match-live-text: #ff8b93;
+  --match-halftime-bg: #461c04;
+  --match-halftime-text: #ffd06d;
+  --match-penalties-bg: #102313;
+  --match-penalties-text: #a3d2a7;
+  --match-finished-bg: #172754;
+  --match-finished-text: #93aefd;
+  --match-scheduled-bg: #440f06;
+  --match-scheduled-text: #ffb271;
+  --match-suspended-bg: #292521;
+  --match-suspended-text: #b6b09f;
+  --match-interrupted-bg: #292521;
+  --match-interrupted-text: #b6b09f;
+  --match-postponed-bg: #321a16;
+  --match-postponed-text: #cba97e;
+  --match-cancelled-bg: #292521;
+  --match-cancelled-text: #b6b09f;
+  --match-abandoned-bg: #292521;
+  --match-abandoned-text: #b6b09f;
+  --match-technical-loss-bg: #292521;
+  --match-technical-loss-text: #b6b09f;
+  --match-walkover-bg: #292521;
+  --match-walkover-text: #b6b09f;
+
+  --time-live-gradient: linear-gradient(to right, #b4000c, #ef4444, #b4000c);
+  --time-halftime-gradient: linear-gradient(to right, #742e06, #b14b10, #742e06);
+  --time-live-anim: live-sweep 3s linear infinite;
+
+  --bet-btn-w: 64px;
+  --bet-btn-h: 24px;
+  --bet-cycle: 6s;
+
+  --odds-cell-w: 48px;
+
+  --odds-winner-grad: linear-gradient(135deg, #144c24, #1c7135);
+  --odds-winner-text: #e8ffe8;
+  --odds-draw-grad: linear-gradient(135deg, #3d3d14, #6b6b20);
+  --odds-draw-text: #ffffe0;
+  --odds-winner-outline: #29c963;
+  --odds-draw-outline: #c9c629;
+}
+
+@media (min-width: 1024px) {
+  body {
+    display: flex;
+    flex-direction: column;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.dark {
+  --background: #0f1419;
+  --foreground: #e1e7ed;
+
+  --card: #1a2332;
+  --card-secondary: #1a2332;
+  --card-foreground: #e1e7ed;
+
+  --popover: #1a2332;
+  --popover-foreground: #e1e7ed;
+
+  --text-white: #0f1419;
+  --text-black: #e1e7ed;
+
+  --primary: #00b2ff;
+  --primary-foreground: #0f1419;
+
+  --secondary: #2d3748;
+  --secondary-foreground: #e1e7ed;
+
+  --muted: #2d3748;
+  --muted-foreground: #a0aec0;
+
+  --accent: #00b2ff;
+  --accent-foreground: #0f1419;
+
+  --destructive: #ef4444;
+  --live: #ef4444;
+
+  --border: #2d3748;
+  --input: #1a2332;
+  --ring: #00b2ff;
+
+  --chart-1: #00b2ff;
+  --chart-2: #4a5568;
+  --chart-3: #10b981;
+  --chart-4: #ef4444;
+  --chart-5: #f59e0b;
+
+  --sidebar: #1a2332;
+  --sidebar-foreground: #e1e7ed;
+  --sidebar-primary: #00b2ff;
+  --sidebar-primary-foreground: #0f1419;
+  --sidebar-accent: #2d3748;
+  --sidebar-accent-foreground: #e1e7ed;
+  --sidebar-border: #2d3748;
+  --sidebar-ring: #00b2ff;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    scrollbar-width: thin;
+  }
+  body {
+    @apply bg-background text-foreground text-base;
+  }
+  html {
+    scrollbar-width: thin;
+    scrollbar-gutter: stable;
+    scrollbar-color: var(--primary) var(--background);
+  }
+}
+
+.status-live {
+  background: var(--match-live-bg);
+  color: var(--match-live-text);
+}
+.status-half-time {
+  background: var(--match-halftime-bg);
+  color: var(--match-halftime-text);
+}
+.status-penalties {
+  background: var(--match-penalties-bg);
+  color: var(--match-penalties-text);
+}
+.status-suspended {
+  background: var(--match-suspended-bg);
+  color: var(--match-suspended-text);
+}
+.status-finished {
+  background: var(--match-finished-bg);
+  color: var(--match-finished-text);
+}
+.status-scheduled {
+  background: var(--match-scheduled-bg);
+  color: var(--match-scheduled-text);
+}
+.status-interrupted {
+  background: var(--match-interrupted-bg);
+  color: var(--match-interrupted-text);
+}
+.status-postponed {
+  background: var(--match-postponed-bg);
+  color: var(--match-postponed-text);
+}
+.status-cancelled {
+  background: var(--match-cancelled-bg);
+  color: var(--match-cancelled-text);
+}
+.status-abandoned {
+  background: var(--match-abandoned-bg);
+  color: var(--match-abandoned-text);
+}
+.status-technical-loss {
+  background: var(--match-technical-loss-bg);
+  color: var(--match-technical-loss-text);
+}
+.status-walkover {
+  background: var(--match-walkover-bg);
+  color: var(--match-walkover-text);
+}
+
+.time-finished {
+  @apply text-sm py-1 rounded-md font-medium w-6 lg:w-10 text-center;
+}
+.time-live {
+  @apply py-1 px-2 flex items-center justify-center rounded-md text-white font-medium w-6 lg:w-10 text-center;
+  background: var(--time-live-gradient);
+  background-size: 300% 100%;
+  animation: var(--time-live-anim);
+  transform-origin: center;
+  will-change: transform;
+}
+.time-halftime {
+  @apply py-1 px-2 flex items-center justify-center rounded-md text-white font-medium w-6 lg:w-10 text-center;
+  background: var(--time-halftime-gradient);
+  background-size: 300% 100%;
+}
+
+.bet-btn {
+  position: relative;
+  width: var(--bet-btn-w);
+  height: var(--bet-btn-h);
+  border-radius: 6px;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--primary);
+  background: rgba(0, 178, 255, 0.1);
+  cursor: pointer;
+}
+.bet-btn.bet-blue {
+  border-color: var(--primary);
+  background: var(--card);
+  color: var(--primary);
+}
+.bet-btn.bet-red {
+  --bet-color: #ff2640;
+  border-color: #ff2640;
+  background: rgba(255, 38, 64, 0.1);
+  color: #ff2640;
+}
+
+.bet-btn .bet-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  font-size: 9px;
+  backface-visibility: hidden;
+  pointer-events: none;
+}
+.bet-btn img {
+  padding: 2px;
+  filter: drop-shadow(0 0 2px var(--bet-color));
+}
+
+@keyframes live-sweep {
+  0% {
+    transform: scale3d(1, 1, 1);
+    background-position: 0 0;
+  }
+  50% {
+    transform: scale3d(1.05, 1.05, 1);
+    background-position: 100% 0;
+  }
+  100% {
+    transform: scale3d(1, 1, 1);
+    background-position: 0 0;
+  }
+}
+
+@keyframes betLabelCycle {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  35% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  70% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  75% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes betLogoCycle {
+  0% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  40% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  45% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  75% {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+}
+.bet-animate .bet-label {
+  animation: betLabelCycle var(--bet-cycle) linear infinite;
+}
+.bet-animate .bet-logo {
+  animation: betLogoCycle var(--bet-cycle) linear infinite;
+}
+
+.odds-cell {
+  width: var(--odds-cell-w);
+  transition: background 0.25s, color 0.25s, transform 0.25s;
+}
+.odds-cell-max {
+  border-color: var(--primary);
+  outline: 1px solid var(--primary);
+}
+.odds-cell-winner {
+  font-weight: 700;
+  box-shadow: 0 0 0 1px var(--odds-winner-outline), 0 0 6px -2px var(--odds-winner-outline);
+}
+.odds-cell-draw-winner {
+  font-weight: 700;
+  box-shadow: 0 0 0 1px var(--odds-draw-outline), 0 0 6px -2px var(--odds-draw-outline);
+}
+.odds-cell-loser {
+  opacity: 0.55;
+}
+
+/* Degradado circular en los laterales */
+.gradient-halo-left,
+.gradient-halo-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 160px;
+  filter: blur(50px);
+  opacity: 0.45;
+}
+.gradient-halo-left {
+  left: -120px;
+  background: radial-gradient(circle at 100% 50%, #7da4ff 0%, transparent 70%);
+}
+.gradient-halo-right {
+  right: -120px;
+  background: radial-gradient(circle at 0% 50%, #ff5f7e 0%, transparent 70%);
+}
+
+/* pequeña animación opcional */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+.animate-fade-in {
+  animation: fade-in 0.35s ease-out both;
+}
+
+.favorite-border-bottom {
+  border-bottom: 2px solid var(--primary);
+  border-bottom-left-radius: 0.625rem;
+  border-bottom-right-radius: 0.625rem;
+}
+
+.match-card-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+/* Al hacer hover, el contenido interno se desenfoca y oscurece ligeramente */
+.match-card-hover:hover .match-card-content {
+  transform: scale(0.98);
+  filter: blur(2px) brightness(0.9);
+}
+
+/* El menú de opciones aparece al hacer hover */
+.match-card-hover .match-card-options {
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+}
+
+.match-card-hover:hover .match-card-options {
+  opacity: 1;
 }
