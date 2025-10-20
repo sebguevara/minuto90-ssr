@@ -6,7 +6,7 @@ import {
   GoalServeMatch,
   GoalServeEvent,
 } from '@/modules/football/domain/types/fixtureResponse'
-import { ALL_COUNTRIES } from '@/lib/consts'
+import { ALL_COUNTRIES, processMatchData } from '@/lib/consts'
 
 const toEvent = (event: GoalServeEvent): MatchEvent => {
   const typeMap: { [key: string]: EventType } = {
@@ -43,6 +43,7 @@ const toMatch = (match: GoalServeMatch): Match => ({
   id: match['@id'],
   staticId: match['@static_id'],
   status: match['@status'],
+  statusConfig: match.statusConfig,
   date: match['@formatted_date'],
   time: match['@time'],
   timer: match['@timer'],
@@ -70,9 +71,9 @@ const toMatch = (match: GoalServeMatch): Match => ({
 export const fixtureMapper = {
   toDomain: (response: GoalServeFixturesResponse): LeagueFixtures[] => {
     if (!response.scores || !response.scores.category) return []
+    const { scores } = processMatchData(response)
 
-    return response.scores.category.map((category: GoalServeCategory) => {
-      console.log(category['@file_group'])
+    return scores.category.map((category: GoalServeCategory) => {
       return {
         id: category['@id'],
         name: category['@name'],

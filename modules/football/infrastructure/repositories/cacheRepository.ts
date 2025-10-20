@@ -1,91 +1,67 @@
 import { getRedisClient } from '@/lib/redis'
 
 export interface CacheOptions {
-  ttl?: number // Time to live en segundos
-  prefix?: string // Prefijo para keys (ej: 'fixtures:', 'logos:')
+  ttl?: number
 }
 
+const serialize = (value: unknown): string => JSON.stringify(value)
+const deserialize = <T>(value: string): T => JSON.parse(value) as T
+
 export const cacheRepository = {
-  /**
-   * Obtener valor del caché
-   */
-  async get<T>(key: string, options?: CacheOptions): Promise<T | null> {
+  async get<T>(key: string): Promise<T | null> {
     try {
       const redis = getRedisClient()
-      const fullKey = options?.prefix ? `${options.prefix}${key}` : key
-
-      const data = await redis.get(fullKey)
-
-      if (!data) {
-        return null
-      }
-
-      return JSON.parse(data) as T
+      const data = await redis.get(key)
+      if (!data) return null
+      return deserialize<T>(data)
     } catch (error) {
-      console.error(`[Cache Error] Error al obtener ${key}:`, error)
-      return null // Fail gracefully
+      console.error(`[Cache Error] GET ${key}:`, error)
+      return null
     }
   },
 
-  /**
-   * Guardar valor en caché
-   */
   async set<T>(key: string, value: T, options?: CacheOptions): Promise<void> {
     try {
       const redis = getRedisClient()
-      const fullKey = options?.prefix ? `${options.prefix}${key}` : key
-      const ttl = options?.ttl || 60 // Default 1 minuto
-
-      await redis.setex(fullKey, ttl, JSON.stringify(value))
+      const ttl = options?.ttl || 60
+      await redis.setex(key, ttl, serialize(value))
     } catch (error) {
-      console.error(`[Cache Error] Error al guardar ${key}:`, error)
-      // No lanzar error, solo logear
+      console.error(`[Cache Error] SET ${key}:`, error)
     }
   },
 
-  /**
-   * Eliminar valor del caché
-   */
-  async delete(key: string, options?: CacheOptions): Promise<void> {
+  async getMany<T>(keys: string[]): Promise<(T | null)[]> {
+    if (keys.length === 0) return []
     try {
       const redis = getRedisClient()
-      const fullKey = options?.prefix ? `${options.prefix}${key}` : key
-
-      await redis.del(fullKey)
-      console.log(`[Cache Delete] ${fullKey}`)
+      const data = await redis.mget(keys)
+      return data.map((item) => (item ? deserialize<T>(item) : null))
     } catch (error) {
-      console.error(`[Cache Error] Error al eliminar ${key}:`, error)
+      console.error(`[Cache Error] MGET:`, error)
+      return keys.map(() => null)
     }
   },
 
-  /**
-   * Verificar si existe una key
-   */
-  async exists(key: string, options?: CacheOptions): Promise<boolean> {
+  async setMany(data: Record<string, any>, ttl: number): Promise<void> {
+    if (Object.keys(data).length === 0) return
     try {
       const redis = getRedisClient()
-      const fullKey = options?.prefix ? `${options.prefix}${key}` : key
-
-      const result = await redis.exists(fullKey)
-      return result === 1
+      const pipeline = redis.pipeline()
+      for (const key in data) {
+        pipeline.setex(key, ttl, serialize(data[key]))
+      }
+      await pipeline.exec()
     } catch (error) {
-      console.error(`[Cache Error] Error al verificar ${key}:`, error)
-      return false
+      console.error(`[Cache Error] MSET:`, error)
     }
   },
 
-  /**
-   * Obtener TTL restante de una key
-   */
-  async ttl(key: string, options?: CacheOptions): Promise<number> {
+  async delete(key: string): Promise<void> {
     try {
       const redis = getRedisClient()
-      const fullKey = options?.prefix ? `${options.prefix}${key}` : key
-
-      return await redis.ttl(fullKey)
+      await redis.del(key)
     } catch (error) {
-      console.error(`[Cache Error] Error al obtener TTL de ${key}:`, error)
-      return -1
+      console.error(`[Cache Error] DELETE ${key}:`, error)
     }
   },
 }

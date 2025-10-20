@@ -1,4 +1,5 @@
 import { TeamInfo, MatchEvent } from './common'
+import { StatusConfig } from '@/lib/consts/football/match_status'
 
 export interface Country {
   name: string
@@ -15,6 +16,7 @@ export interface Match {
   id: string
   staticId: string
   status: string
+  statusConfig?: StatusConfig
   date: string
   time: string
   timer?: string

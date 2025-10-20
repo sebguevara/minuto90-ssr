@@ -1,10 +1,7 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 import { ARGENTINA_TIMEZONE_MAP } from '@/lib/consts/timezones'
-import {
-  getStatusConfig as getStatusConfigFn,
-  type StatusConfig,
-} from '@/lib/consts/football/match_status'
+import { STATUS_CONFIG, type StatusConfig } from '@/lib/consts/football/match_status'
 import { abbreviations } from '@/lib/consts/abbreviations'
 
 export function cn(...inputs: ClassValue[]) {
@@ -19,7 +16,7 @@ export function getBrowserTimezone(): string {
 
 export function getStatusConfig(statusCode: string): StatusConfig {
   return (
-    getStatusConfigFn(statusCode) || {
+    STATUS_CONFIG[statusCode] || {
       type: 'other',
       label: statusCode,
       className: 'text-muted-foreground',

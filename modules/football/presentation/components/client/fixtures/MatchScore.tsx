@@ -7,8 +7,8 @@ interface Props {
 }
 
 export const MatchScore = ({ match, className }: Props) => {
-  const homeRedCards = match.events.filter(e => e.type === 'redcard' && e.team === 'localteam').length;
-  const awayRedCards = match.events.filter(e => e.type === 'redcard' && e.team === 'visitorteam').length;
+  const homeRedCards = match.events.filter((e) => e.type === 'redcard' && e.team === 'localteam').length
+  const awayRedCards = match.events.filter((e) => e.type === 'redcard' && e.team === 'visitorteam').length
 
   return (
     <div className={cn('min-w-4 lg:min-w-12 score relative flex flex-col items-center justify-center gap-0', className)}>

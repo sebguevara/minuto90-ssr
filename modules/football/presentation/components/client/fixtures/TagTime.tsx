@@ -1,13 +1,11 @@
 import { Match } from '@/modules/football/domain/models/fixture'
-import { getStatusConfig } from '@/lib/consts/football/match_status'
 interface Props {
   match: Match
 }
 
 export const TagTime = ({ match }: Props) => {
-  const statusConfig = getStatusConfig(match.status);
-  const isLive = statusConfig.type === 'live';
-  const isScheduled = statusConfig.type === 'scheduled';
+  const isLive = match.statusConfig?.type === 'live';
+  const isScheduled = match.statusConfig?.type === 'scheduled';
   
   const minute = parseInt(match.timer || '0');
 
@@ -25,7 +23,7 @@ export const TagTime = ({ match }: Props) => {
   }
 
   return (
-    <div className={`font-semibold ${statusConfig.className}`}>
+    <div className={`font-semibold ${match.statusConfig?.className}`}>
       {content}
     </div>
   )

@@ -48,42 +48,42 @@ export const RELEVANT_CUP = [
 
 export const RELEVANT_LEAGUES = [
   {
-    id: 140,
+    id: 1399,
     name: 'La Liga',
     logo: 'https://media.api-sports.io/football/leagues/140.png',
   },
   {
-    id: 39,
+    id: 1204,
     name: 'Premier League',
     logo: 'https://media.api-sports.io/football/leagues/39.png',
   },
   {
-    id: 61,
+    id: 2471,
     name: 'Ligue 1',
     logo: 'https://media.api-sports.io/football/leagues/61.png',
   },
   {
-    id: 135,
+    id: 1269,
     name: 'Serie A',
     logo: 'https://media.api-sports.io/football/leagues/135.png',
   },
   {
-    id: 78,
+    id: 1229,
     name: 'Bundesliga',
     logo: 'https://media.api-sports.io/football/leagues/78.png',
   },
   {
-    id: 253,
+    id: 1440,
     name: 'Major League Soccer',
     logo: 'https://media.api-sports.io/football/leagues/253.png',
   },
   {
-    id: 71,
+    id: 1141,
     name: 'Serie A',
     logo: 'https://media.api-sports.io/football/leagues/71.png',
   },
   {
-    id: 262,
+    id: 1308,
     name: 'Liga MX',
     logo: 'https://media.api-sports.io/football/leagues/262.png',
   },

@@ -4,9 +4,31 @@ import { LeagueFixtures } from '@/modules/football/domain/models/fixture'
 import { fetchFromGoalServe } from './baseRepository'
 import { logoRepository } from './logoRepository'
 
+interface FixtureFilters {
+  cat?: string
+  gid?: string
+}
+
 export const fixtureRepository = {
-  async getFixturesByDate(dateParam: string): Promise<LeagueFixtures[]> {
-    const data = await fetchFromGoalServe<GoalServeFixturesResponse>(`soccernew/${dateParam}`)
+  async getFixturesByDate(
+    dateParam: string,
+    filters: FixtureFilters = {}
+  ): Promise<LeagueFixtures[]> {
+    let path = `soccernew/${dateParam}`
+    const queryParams = new URLSearchParams()
+    if (filters.cat) {
+      queryParams.append('cat', filters.cat)
+    }
+    if (filters.gid) {
+      queryParams.append('gid', filters.gid)
+    }
+
+    const queryString = queryParams.toString()
+    if (queryString) {
+      path += `?${queryString}`
+    }
+
+    const data = await fetchFromGoalServe<GoalServeFixturesResponse>(path)
     const leagueFixtures = fixtureMapper.toDomain(data)
 
     const teamIds = leagueFixtures.flatMap((league) =>
@@ -37,7 +59,7 @@ export const fixtureRepository = {
   },
 
   async getFixtureById(id: string): Promise<LeagueFixtures | null> {
-    const data = await fetchFromGoalServe<GoalServeFixturesResponse>(`soccerstats/fixture/${id}`)
+    const data = await fetchFromGoalServe<GoalServeFixturesResponse>(`soccerfixtures/match/${id}`)
     let leagueFixtures = fixtureMapper.toDomain(data)
 
     if (leagueFixtures.length === 0) return null
@@ -47,12 +69,10 @@ export const fixtureRepository = {
       match.visitorTeam.id,
     ])
     const leagueIds = [leagueFixtures[0].id]
-
     const { teams: teamLogos, leagues: leagueLogos } = await logoRepository.getLogos(
       teamIds,
       leagueIds
     )
-
     return {
       ...leagueFixtures[0],
       logo: leagueLogos.get(leagueFixtures[0].id),

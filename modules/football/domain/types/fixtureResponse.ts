@@ -1,7 +1,9 @@
+import { StatusConfig } from '@/lib/consts/football/match_status'
 import { GoalServeTeam } from './common'
 
 export interface GoalServeMatch {
   '@status': string
+  statusConfig?: StatusConfig
   '@timer': string
   '@date': string
   '@formatted_date': string
