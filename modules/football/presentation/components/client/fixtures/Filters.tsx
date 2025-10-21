@@ -1,11 +1,33 @@
+'use client'
+
 import { Toggle } from '@/modules/core/components/ui/toggle'
-import { Button } from '@/modules/core/components/ui/button'
-import { Popover, PopoverContent, PopoverTrigger } from '@/modules/core/components/ui/popover'
-import { Calendar } from '@/modules/core/components/ui/calendar'
-import { ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/modules/core/components/ui/select'
+import { CalendarIcon } from 'lucide-react'
 import { format, subDays, addDays } from 'date-fns'
 import { es } from 'date-fns/locale'
-import { getTodayDate, parseToDate } from '@/lib/utils'
+
+// Función para generar las opciones de fecha para el Select
+const generateDateOptions = () => {
+  const options = []
+  const today = new Date()
+  // Rango extendido a 7 días antes y 7 días después
+  for (let i = -7; i <= 7; i++) {
+    const date = addDays(today, i)
+    const value = i === 0 ? 'home' : i > 0 ? `d${i}` : `d-${Math.abs(i)}`
+    let label = format(date, 'E dd MMM', { locale: es })
+    if (i === 0) label = `Hoy, ${label}`
+    if (i === -1) label = `Ayer, ${label}`
+    if (i === 1) label = `Mañana, ${label}`
+    options.push({ value, label: label.charAt(0).toUpperCase() + label.slice(1) })
+  }
+  return options
+}
 
 interface FiltersProps {
   liveOnly: boolean
@@ -20,8 +42,8 @@ interface FiltersProps {
   setShowOdds: (showOdds: boolean) => void
   date: string
   setDate: (date: string) => void
-  setExpanded: (expanded: boolean) => void
 }
+
 export const Filters = ({
   liveOnly,
   setLiveOnly,
@@ -35,10 +57,8 @@ export const Filters = ({
   setShowOdds,
   date,
   setDate,
-  setExpanded,
 }: FiltersProps) => {
-  const dateFormatted = parseToDate(date)
-  const isTodayDate = date === getTodayDate()
+  const dateOptions = generateDateOptions()
 
   const handleToggle = (
     type: 'live' | 'scheduled' | 'finished' | 'favorites',
@@ -55,77 +75,31 @@ export const Filters = ({
     }
   }
 
-  const changeDate = (newDate: Date) => {
+  const handleDateChange = (newDateValue: string) => {
     setLiveOnly(false)
     setScheduledOnly(false)
     setFinishedOnly(false)
-    setDate(format(newDate, 'yyyy-MM-dd'))
-    setExpanded(false)
+    setDate(newDateValue)
   }
 
-  const prevDay = subDays(dateFormatted, 1)
-  const nextDay = addDays(dateFormatted, 1)
-  const prevDayLabel = format(prevDay, 'dd MMM', { locale: es })
-  const nextDayLabel = format(nextDay, 'dd MMM', { locale: es })
+  const isToday = date === 'home'
 
   return (
     <div className="flex flex-col md:flex-row gap-2 w-full lg:w-max justify-between">
       <div className="flex items-center justify-between gap-2">
-        <Button
-          variant="outline"
-          size="icon"
-          disabled={favoritesOnly}
-          className="cursor-pointer dark:hover:text-primary dark:hover:bg-transparent"
-          onClick={() => changeDate(prevDay)}>
-          <ChevronLeft size={14} />
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={favoritesOnly}
-          className="cursor-pointer dark:hover:text-primary dark:hover:bg-transparent md:hidden min-w-14 px-2 h-9"
-          onClick={() => changeDate(prevDay)}>
-          <span className="text-xs capitalize">{prevDayLabel}</span>
-        </Button>
-
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              disabled={favoritesOnly}
-              className="cursor-pointer dark:hover:text-primary flex-1 md:flex-none"
-              variant="outline">
-              <CalendarIcon size={14} />{' '}
-              <span className="text-xs lg:text-sm capitalize">
-                {format(dateFormatted, 'dd MMM yyyy', { locale: es })}
-              </span>
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={dateFormatted}
-              onSelect={(d) => d && changeDate(d)}
-              locale={es}
-            />
-          </PopoverContent>
-        </Popover>
-
-        <Button
-          variant="outline"
-          size="sm"
-          disabled={favoritesOnly}
-          className="cursor-pointer dark:hover:text-primary dark:hover:bg-transparent md:hidden min-w-14 px-2 h-9"
-          onClick={() => changeDate(nextDay)}>
-          <span className="text-xs capitalize">{nextDayLabel}</span>
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          disabled={favoritesOnly}
-          className="cursor-pointer dark:hover:text-primary dark:hover:bg-transparent"
-          onClick={() => changeDate(nextDay)}>
-          <ChevronRight size={14} />
-        </Button>
+        <Select value={date} onValueChange={handleDateChange} disabled={favoritesOnly}>
+          <SelectTrigger className="w-full md:w-[240px]">
+            <CalendarIcon size={14} />
+            <SelectValue placeholder="Selecciona una fecha" />
+          </SelectTrigger>
+          <SelectContent>
+            {dateOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="flex items-center justify-between gap-2 lg:gap-2 mt-1 md:mt-0">
         <div className="flex items-center gap-2">
@@ -140,13 +114,7 @@ export const Filters = ({
           </Toggle>
         </div>
         <div className="flex items-center gap-2">
-          {!isTodayDate && (
-            <Toggle aria-label="Hoy" onPressedChange={() => changeDate(new Date())}>
-              <span className="text-xs lg:text-sm">Hoy</span>
-            </Toggle>
-          )}
-
-          {isTodayDate && (
+          {isToday && (
             <>
               <Toggle
                 disabled={favoritesOnly}

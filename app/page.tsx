@@ -1,4 +1,5 @@
 import { fixtureService } from '@/modules/football/application/services/fixtureService'
+import { LeagueFixtures } from '@/modules/football/domain/models/fixture'
 import { FixturesView } from '@/modules/football/presentation/views/FixturesView'
 import { Metadata } from 'next'
 
@@ -51,8 +52,7 @@ export default async function Home({
   }
 
   
-  const dateParam = params.live === '1' ? 'live' : params.date || 'home'
-  const initialFixtures = await fixtureService.getFixturesByDate(dateParam)
+  const initialFixtures = await fixtureService.getAndMergeFixtures(['home', 'd1'])
 
-  return <FixturesView initialFixtures={initialFixtures} dateParam={dateParam} />
+  return <FixturesView initialFixtures={initialFixtures} dateParam='home' />
 }

@@ -7,9 +7,9 @@ import { MatchOdds } from './MatchOdds'
 import { useFavoriteStore } from '@/modules/core/store/useFavoriteStore'
 import { Button } from '@/modules/core/components/ui/button'
 import { ImageWithRetry } from '@/modules/core/components/Image/ImageWithRetry'
-import { ViewTransition } from 'react'
 import { Match } from '@/modules/football/domain/models/fixture'
-import Link from 'next/link'
+import Link from 'next/link'  
+import { ViewTransition } from 'react'
 interface Props {
   fixture: Match
   showOdds?: boolean
@@ -27,8 +27,7 @@ export const CardMatch = ({
   showDate,
   shortBadge,
 }: Props) => {
-console.log('fixture', fixture);
-
+  console.log('fixture', fixture);
   const from = fromQS || (typeof window !== 'undefined' ? window.location.search.slice(1) : '')
   const href = `/football/partido/${generateSlug(fixture.localTeam.name)}/${generateSlug(
     fixture.visitorTeam.name

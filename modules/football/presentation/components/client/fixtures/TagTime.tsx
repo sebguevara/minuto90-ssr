@@ -6,6 +6,7 @@ interface Props {
 export const TagTime = ({ match }: Props) => {
   const isLive = match.statusConfig?.type === 'live';
   const isScheduled = match.statusConfig?.type === 'scheduled';
+  const isFinished = match.status === 'FT';
   
   const minute = parseInt(match.timer || '0');
 
@@ -23,8 +24,8 @@ export const TagTime = ({ match }: Props) => {
   }
 
   return (
-    <div className={`font-semibold ${match.statusConfig?.className}`}>
-      {content}
+    <div className={`font-semibold w-6 lg:w-9 text-center`}>
+      {isFinished ? <span className="text-[12px] lg:text-sm">- -</span> : content}
     </div>
   )
 }

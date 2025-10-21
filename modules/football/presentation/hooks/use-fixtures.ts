@@ -3,16 +3,18 @@ import { LeagueFixtures } from '@/modules/football/domain/models/fixture'
 
 interface UseFixturesOptions {
   dateParam: string
-  initialData: LeagueFixtures[]
+  initialData?: LeagueFixtures[]
 }
 
 async function fetchFixtures(dateParam: string): Promise<LeagueFixtures[]> {
   const endpoint =
     dateParam === 'live' ? '/api/football/live' : `/api/football/fixtures?date=${dateParam}`
   const response = await fetch(endpoint)
+
   if (!response.ok) {
     throw new Error('Error al obtener fixtures')
   }
+
   return response.json()
 }
 

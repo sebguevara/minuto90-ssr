@@ -58,8 +58,10 @@ export const fixtureRepository = {
     }))
   },
 
-  async getFixtureById(id: string): Promise<LeagueFixtures | null> {
-    const data = await fetchFromGoalServe<GoalServeFixturesResponse>(`soccerfixtures/match/${id}`)
+  async getFixtureById(leagueId: string, id: string): Promise<LeagueFixtures | null> {
+    const data = await fetchFromGoalServe<GoalServeFixturesResponse>(
+      `soccerfixtures/${leagueId}/${id}`
+    )
     let leagueFixtures = fixtureMapper.toDomain(data)
 
     if (leagueFixtures.length === 0) return null
