@@ -1,21 +1,21 @@
+import { Match } from '@/modules/football/domain/models/fixture'
+import { League } from '@/modules/football/domain/models/league'
+import { TeamProfile } from '@/modules/football/domain/models/team'
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { MatchPreview } from '@/modules/football/domain/entities/Match'
-import { League } from '@/modules/football/domain/entities/League'
-import { Team } from '@/modules/football/domain/entities/Team'
 
-export type FavoriteTeam = Pick<Team, 'id' | 'name' | 'logo'> & {
+export type FavoriteTeam = Pick<TeamProfile, 'id' | 'name' | 'logo'> & {
   leagueId: number
   leagueName: string
 }
 
 interface FavoriteState {
-  favoriteMatches: Record<number, MatchPreview>
+  favoriteMatches: Record<number, Match>
   favoriteLeagues: Record<number, League>
   favoriteTeams: Record<number, FavoriteTeam>
-  toggleFavoriteMatch: (match: MatchPreview) => void
+  toggleFavoriteMatch: (match: Match) => void
   isMatchFavorite: (matchId: number) => boolean
-  toggleFavoriteLeague: (league: League & { season: number }) => void
+  toggleFavoriteLeague: (league: League) => void
   isLeagueFavorite: (leagueId: number) => boolean
   toggleFavoriteTeam: (team: FavoriteTeam) => void
   isTeamFavorite: (teamId: number) => boolean
@@ -30,40 +30,40 @@ export const useFavoriteStore = create<FavoriteState>()(
 
       toggleFavoriteMatch: (match) =>
         set((state) => {
-          const isFavorite = !!state.favoriteMatches[match.id]
+          const isFavorite = !!state.favoriteMatches[Number(match.id)]
           const nextState = { ...state.favoriteMatches }
           if (isFavorite) {
-            delete nextState[match.id]
+            delete nextState[Number(match.id)]
           } else {
-            nextState[match.id] = match
+            nextState[Number(match.id)] = match
           }
           return { favoriteMatches: nextState }
         }),
       isMatchFavorite: (matchId) => !!get().favoriteMatches[matchId],
       toggleFavoriteLeague: (league) =>
         set((state) => {
-          const isFavorite = !!state.favoriteLeagues[league.id]
+          const isFavorite = !!state.favoriteLeagues[Number(league.id)]
           const nextState = { ...state.favoriteLeagues }
           if (isFavorite) {
-            delete nextState[league.id]
+            delete nextState[Number(league.id)]
           } else {
-            nextState[league.id] = league
+            nextState[Number(league.id)] = league
           }
           return { favoriteLeagues: nextState }
         }),
       isLeagueFavorite: (leagueId) => !!get().favoriteLeagues[leagueId],
       toggleFavoriteTeam: (team) =>
         set((state) => {
-          const isFavorite = !!state.favoriteTeams[team.id]
+          const isFavorite = !!state.favoriteTeams[Number(team.id)]
           const nextState = { ...state.favoriteTeams }
           if (isFavorite) {
-            delete nextState[team.id]
+            delete nextState[Number(team.id)]
           } else {
-            nextState[team.id] = team
+            nextState[Number(team.id)] = team
           }
           return { favoriteTeams: nextState }
         }),
-      isTeamFavorite: (teamId) => !!get().favoriteTeams[teamId],
+      isTeamFavorite: (teamId) => !!get().favoriteTeams[Number(teamId)],
     }),
     {
       name: 'favorite-storage',

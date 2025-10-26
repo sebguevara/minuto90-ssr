@@ -1,3 +1,4 @@
+// sebguevara/minuto90-ssr/minuto90-ssr-ae3f061568e172e16c8c3f11c52c20f7774632d1/modules/football/presentation/views/FixturesView.tsx
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
@@ -7,10 +8,9 @@ import { useFixtures } from '@/modules/football/presentation/hooks/use-fixtures'
 import { ErrorMessage } from '@/modules/core/components/errors/ErrorMessage'
 import { MatchListSkeleton } from '@/modules/core/components/loadings/MatchListSkeleton'
 import { PreviewMatches } from '../components/client/fixtures/PreviewMatches'
-import { Sidebar } from 'lucide-react'
 import { useFavoriteStore } from '@/modules/core/store/useFavoriteStore'
 import { useSearchStore } from '@/modules/core/store/useSearchStore'
-import { strip } from '@/lib/utils'
+import { strip, getBrowserTimezone, formatDate, formatTime } from '@/lib/utils'
 import { PRESELECTED_LEAGUES } from '@/lib/consts/football/leagues'
 
 interface FixturesViewProps {
@@ -38,6 +38,7 @@ export function FixturesView({ initialFixtures, dateParam: initialDateParam }: F
   )
   const [showOdds, setShowOdds] = useState(() => parseQueryParam(searchParams.get('odds')))
   const [isExpanded, setIsExpanded] = useState(false)
+  const [timezone, setTimezone] = useState('UTC');
 
   const { data: fixtures, isLoading, isError, refetch } = useFixtures({
     dateParam: date,
@@ -45,13 +46,48 @@ export function FixturesView({ initialFixtures, dateParam: initialDateParam }: F
   })
 
   useEffect(() => {
+    setTimezone(getBrowserTimezone());
     setContext('home')
     return () => setContext(null)
   }, [setContext])
 
+  const processedFixtures = useMemo(() => {
+    if (!fixtures) return [];
+    
+    return fixtures.map((league) => ({
+      ...league,
+      matches: league.matches.map((match) => {
+        if (!match.date || !match.time) return match;
+
+        try {
+          const formattedDate = match.date.split('.').reverse().join('-');
+          const utcDate = new Date(`${formattedDate}T${match.time}Z`);
+
+          if (isNaN(utcDate.getTime())) {
+            console.warn(`Fecha inválida detectada para el partido ID ${match.id}: ${match.date} ${match.time}`);
+            return match;
+          }
+          
+          const localDate = formatDate(utcDate, timezone)
+          const localTime = formatTime(utcDate, timezone)
+  
+          return {
+            ...match,
+            date: localDate,
+            time: localTime,
+          }
+        } catch (e) {
+            console.error(`Error al procesar la fecha para el partido ID ${match.id}:`, e);
+            return match;
+        }
+      }),
+    }))
+
+  }, [fixtures, timezone]);
+
   const filteredLeagues = useMemo(() => {
-    if (!fixtures) return []
-    let leagues = fixtures
+    if (!processedFixtures) return []
+    let leagues = processedFixtures
     
     if (favoritesOnly) {
       const favoriteMatchIds = new Set(Object.keys(favoriteMatches).map(Number))
@@ -101,7 +137,7 @@ export function FixturesView({ initialFixtures, dateParam: initialDateParam }: F
     });
     
     return leagues
-  }, [fixtures, liveOnly, scheduledOnly, finishedOnly, favoritesOnly, favoriteMatches, query])
+  }, [processedFixtures, liveOnly, scheduledOnly, finishedOnly, favoritesOnly, favoriteMatches, query])
 
   const renderContent = () => {
     if (isLoading) {
@@ -118,7 +154,6 @@ export function FixturesView({ initialFixtures, dateParam: initialDateParam }: F
       )
     }
 
-    // **Prioridad 3: Mostrar los partidos.**
     return (
       <PreviewMatches
         filteredLeagues={filteredLeagues}
@@ -154,7 +189,6 @@ export function FixturesView({ initialFixtures, dateParam: initialDateParam }: F
   return (
     <div className="flex flex-col lg:flex-row gap-4">
       <aside className="hidden lg:block w-max shrink-0 sticky top-[90px] self-start">
-        {/* <Sidebar leaguesByCountry={leaguesByCountry} /> */}
       </aside>
       <div className="flex-1">{renderContent()}</div>
     </div>

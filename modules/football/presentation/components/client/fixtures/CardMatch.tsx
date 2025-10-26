@@ -1,3 +1,4 @@
+// sebguevara/minuto90-ssr/minuto90-ssr-ae3f061568e172e16c8c3f11c52c20f7774632d1/modules/football/presentation/components/client/fixtures/CardMatch.tsx
 import { abbreviateTeamName, getStatusConfig, cn, generateSlug } from '@/lib/utils'
 import { Heart } from 'lucide-react'
 import { TagTime } from './TagTime'
@@ -27,7 +28,6 @@ export const CardMatch = ({
   showDate,
   shortBadge,
 }: Props) => {
-  console.log('fixture', fixture);
   const from = fromQS || (typeof window !== 'undefined' ? window.location.search.slice(1) : '')
   const href = `/football/partido/${generateSlug(fixture.localTeam.name)}/${generateSlug(
     fixture.visitorTeam.name
@@ -41,15 +41,11 @@ export const CardMatch = ({
     e.stopPropagation()
     toggleFavoriteMatch(fixture)
   }
+  console.log('fixture', fixture);
 
-  const redHome = fixture.events.filter(
-    (e) => e.type === 'redcard' && e.team === 'localteam'
-  )
-  const redAway = fixture.events.filter(
-    (e) => e.type === 'redcard' && e.team === 'visitorteam'
-  )
-
-  const isScheduled = fixture.statusConfig?.type === 'scheduled'
+  console.log('fixture.statusConfig', fixture.statusConfig);
+  
+  
   const isFinished = fixture.statusConfig?.type === 'finished'
 
   return (
@@ -102,6 +98,7 @@ export const CardMatch = ({
               <div className="relative w-5 h-5 lg:w-8 lg:h-8 shrink-0">
                 <ViewTransition name={`logo-${fixture.id}-home`}>
                   <ImageWithRetry
+                    key={fixture.localTeam.logo ?? `default-home-${fixture.id}`}
                     src={fixture.localTeam.logo ?? ''}
                     alt={fixture.localTeam.name}
                     fill
@@ -122,6 +119,7 @@ export const CardMatch = ({
               <div className="relative w-5 h-5 lg:w-8 lg:h-8 shrink-0">
                 <ViewTransition name={`logo-${fixture.id}-away`}>
                   <ImageWithRetry
+                    key={fixture.visitorTeam.logo ?? `default-away-${fixture.id}`}
                     src={fixture.visitorTeam.logo ?? ''}
                     alt={fixture.visitorTeam.name}
                     fill
@@ -156,15 +154,6 @@ export const CardMatch = ({
           </div>
         </div>
       </Link>
-
-      {/* {showOdds && (
-        <MatchOdds
-          fixture={fixture}
-          bets={fixture.odds}
-          loading={!!oddsLoading && !fixture.odds?.length}
-          scheduledOnly={false}
-        />
-      )} */}
     </div>
   )
 }

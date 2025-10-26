@@ -8,19 +8,18 @@ export interface StatusConfig {
 }
 
 export const STATUS_CONFIG: Record<string, StatusConfig> = {
-  TBD: {
-    label: 'POR DEFINIR',
-    type: 'scheduled',
-    code: 'TBD',
-    className: 'status-scheduled',
-  },
   NS: {
     label: 'PROGRAMADO',
     type: 'scheduled',
     code: 'NS',
     className: 'status-scheduled',
   },
-
+  TBD: {
+    label: 'POR DEFINIR',
+    type: 'scheduled',
+    code: 'TBD',
+    className: 'status-scheduled',
+  },
   '1H': {
     label: 'EN VIVO',
     type: 'live',
@@ -152,6 +151,7 @@ export const processMatchData = (apiData: GoalServeFixturesResponse): GoalServeF
 
     matches.forEach((match: any) => {
       const statusString: string = match['@status']
+      const timerString: string = match['@timer']
       let configKey: string | undefined
 
       if (specialStatusMap[statusString]) {
@@ -160,6 +160,8 @@ export const processMatchData = (apiData: GoalServeFixturesResponse): GoalServeF
         configKey = statusString
       } else if (/^\d{2}:\d{2}$/.test(statusString)) {
         configKey = 'NS'
+      } else if (!isNaN(Number(statusString))) {
+        configKey = 'LIVE'
       }
 
       match.statusConfig = STATUS_CONFIG[configKey || 'TBD']

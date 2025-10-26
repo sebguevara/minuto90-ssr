@@ -9,9 +9,13 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function getBrowserTimezone(): string {
-  const detected = Intl.DateTimeFormat().resolvedOptions().timeZone
-
-  return ARGENTINA_TIMEZONE_MAP[detected] || detected
+  try {
+    const detected = Intl.DateTimeFormat().resolvedOptions().timeZone
+    return ARGENTINA_TIMEZONE_MAP[detected] || detected
+  } catch (e) {
+    console.error('No se pudo detectar la zona horaria del navegador, usando UTC como fallback.')
+    return 'UTC'
+  }
 }
 
 export function getStatusConfig(statusCode: string): StatusConfig {
@@ -153,4 +157,24 @@ export const getBaseUrl = () => {
     return process.env.NEXT_PUBLIC_BASE_URL
   }
   return ''
+}
+
+export function formatDate(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    // Formato YYYY-MM-DD
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    timeZone,
+  }).format(date)
+}
+
+export function formatTime(date: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-GB', {
+    // Formato 24h
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+    timeZone,
+  }).format(date)
 }

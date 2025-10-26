@@ -1,6 +1,7 @@
 import { LeagueFixtures } from '@/modules/football/domain/models/fixture'
 import { fixtureRepository } from '@/modules/football/infrastructure/repositories/fixtureRepository'
 import { cacheRepository } from '@/modules/football/infrastructure/repositories/cacheRepository'
+import { formatDate, formatTime } from '@/lib/utils'
 
 function getTTL(dateParam: string): number {
   if (dateParam === 'live') return 10
@@ -33,7 +34,7 @@ function mergeFixtures(fixtureArrays: LeagueFixtures[][]): LeagueFixtures[] {
 
 export const fixtureService = {
   async getFixturesByDate(dateParam: string): Promise<LeagueFixtures[]> {
-    const cacheKey = `fixtures:${dateParam}`
+    const cacheKey = `fixtures:${dateParam}:base`
     const ttl = getTTL(dateParam)
 
     const cached = await cacheRepository.get<LeagueFixtures[]>(cacheKey)
@@ -41,8 +42,24 @@ export const fixtureService = {
       return cached
     }
 
-    console.log(`[Service] Fetching fixtures from GoalServe: ${dateParam}`)
+    console.log(`[Service] Fetching BASE fixtures from GoalServe: ${dateParam}`)
     const fixtures = await fixtureRepository.getFixturesByDate(dateParam)
+
+    await cacheRepository.set(cacheKey, fixtures, { ttl })
+    return fixtures
+  },
+
+  async getAndHydrateFixturesByDate(dateParam: string): Promise<LeagueFixtures[]> {
+    const cacheKey = `fixtures:${dateParam}:hydrated`
+    const ttl = getTTL(dateParam)
+
+    const cached = await cacheRepository.get<LeagueFixtures[]>(cacheKey)
+    if (cached) {
+      return cached
+    }
+
+    console.log(`[Service] Fetching and HYDRATING fixtures from GoalServe: ${dateParam}`)
+    const fixtures = await fixtureRepository.getAndHydrateFixturesByDate(dateParam)
 
     await cacheRepository.set(cacheKey, fixtures, { ttl })
     return fixtures
@@ -55,7 +72,7 @@ export const fixtureService = {
   },
 
   async getLiveFixtures(): Promise<LeagueFixtures[]> {
-    return this.getFixturesByDate('live')
+    return this.getAndHydrateFixturesByDate('live')
   },
 
   async getFixtureById(leagueId: string, id: string): Promise<LeagueFixtures | null> {
@@ -77,9 +94,19 @@ export const fixtureService = {
 
   async invalidateCache(dateParam?: string): Promise<void> {
     if (dateParam) {
-      await cacheRepository.delete(`fixtures:${dateParam}`)
+      await cacheRepository.delete(`fixtures:${dateParam}:base`)
+      await cacheRepository.delete(`fixtures:${dateParam}:hydrated`)
     } else {
-      const keysToDelete = ['fixtures:home', 'fixtures:live', 'fixtures:d1', 'fixtures:d-1']
+      const keysToDelete = [
+        'fixtures:home:base',
+        'fixtures:home:hydrated',
+        'fixtures:live:base',
+        'fixtures:live:hydrated',
+        'fixtures:d1:base',
+        'fixtures:d1:hydrated',
+        'fixtures:d-1:base',
+        'fixtures:d-1:hydrated',
+      ]
       await Promise.all(keysToDelete.map((key) => cacheRepository.delete(key)))
     }
   },

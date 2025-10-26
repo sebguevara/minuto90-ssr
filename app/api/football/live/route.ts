@@ -3,7 +3,7 @@ import { fixtureService } from '@/modules/football/application/services/fixtureS
 
 export async function GET() {
   try {
-    console.log('[API] GET /api/football/live')
+    console.log('[API] GET /api/football/live (Hydrated)')
 
     const liveFixtures = await fixtureService.getLiveFixtures()
 

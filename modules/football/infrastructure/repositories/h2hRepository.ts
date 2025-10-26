@@ -1,7 +1,8 @@
 import { h2hMapper } from '@/modules/football/infrastructure/mappers/h2hMapper'
 import { GoalServeH2HResponse } from '@/modules/football/domain/types/h2hResponse'
 import { Head2Head } from '@/modules/football/domain/models/h2h'
-import { fetchFromGoalServe, fetchLogos } from './baseRepository'
+import { fetchFromGoalServe } from './baseRepository'
+import { logoRepository } from './logoRepository'
 
 export const h2hRepository = {
   getBetweenTeams: async (team1Id: string, team2Id: string): Promise<Head2Head | null> => {
@@ -10,7 +11,7 @@ export const h2hRepository = {
 
     if (h2hData) {
       const teamIds = [h2hData.team1.id, h2hData.team2.id]
-      const teamLogos = await fetchLogos('teams', teamIds)
+      const teamLogos = await logoRepository.getTeamLogos(teamIds)
       h2hData.team1.logo = teamLogos.get(h2hData.team1.id)
       h2hData.team2.logo = teamLogos.get(h2hData.team2.id)
     }

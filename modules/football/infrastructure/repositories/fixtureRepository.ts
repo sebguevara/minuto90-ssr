@@ -9,6 +9,40 @@ interface FixtureFilters {
   gid?: string
 }
 
+async function hydrateFixturesWithLogos(
+  leagueFixtures: LeagueFixtures[]
+): Promise<LeagueFixtures[]> {
+  if (!leagueFixtures || leagueFixtures.length === 0) {
+    return []
+  }
+
+  const teamIds = leagueFixtures.flatMap((league) =>
+    league.matches.flatMap((match) => [match.localTeam.id, match.visitorTeam.id])
+  )
+  const leagueIds = leagueFixtures.map((league) => league.id)
+
+  const { teams: teamLogos, leagues: leagueLogos } = await logoRepository.getLogos(
+    teamIds,
+    leagueIds
+  )
+
+  return leagueFixtures.map((league) => ({
+    ...league,
+    logo: leagueLogos.get(league.id),
+    matches: league.matches.map((match) => ({
+      ...match,
+      localTeam: {
+        ...match.localTeam,
+        logo: teamLogos.get(match.localTeam.id),
+      },
+      visitorTeam: {
+        ...match.visitorTeam,
+        logo: teamLogos.get(match.visitorTeam.id),
+      },
+    })),
+  }))
+}
+
 export const fixtureRepository = {
   async getFixturesByDate(
     dateParam: string,
@@ -29,33 +63,15 @@ export const fixtureRepository = {
     }
 
     const data = await fetchFromGoalServe<GoalServeFixturesResponse>(path)
-    const leagueFixtures = fixtureMapper.toDomain(data)
+    return fixtureMapper.toDomain(data)
+  },
 
-    const teamIds = leagueFixtures.flatMap((league) =>
-      league.matches.flatMap((match) => [match.localTeam.id, match.visitorTeam.id])
-    )
-    const leagueIds = leagueFixtures.map((league) => league.id)
-
-    const { teams: teamLogos, leagues: leagueLogos } = await logoRepository.getLogos(
-      teamIds,
-      leagueIds
-    )
-
-    return leagueFixtures.map((league) => ({
-      ...league,
-      logo: leagueLogos.get(league.id),
-      matches: league.matches.map((match) => ({
-        ...match,
-        localTeam: {
-          ...match.localTeam,
-          logo: teamLogos.get(match.localTeam.id),
-        },
-        visitorTeam: {
-          ...match.visitorTeam,
-          logo: teamLogos.get(match.visitorTeam.id),
-        },
-      })),
-    }))
+  async getAndHydrateFixturesByDate(
+    dateParam: string,
+    filters: FixtureFilters = {}
+  ): Promise<LeagueFixtures[]> {
+    const leagueFixtures = await this.getFixturesByDate(dateParam, filters)
+    return hydrateFixturesWithLogos(leagueFixtures)
   },
 
   async getFixtureById(leagueId: string, id: string): Promise<LeagueFixtures | null> {
@@ -66,29 +82,7 @@ export const fixtureRepository = {
 
     if (leagueFixtures.length === 0) return null
 
-    const teamIds = leagueFixtures[0].matches.flatMap((match) => [
-      match.localTeam.id,
-      match.visitorTeam.id,
-    ])
-    const leagueIds = [leagueFixtures[0].id]
-    const { teams: teamLogos, leagues: leagueLogos } = await logoRepository.getLogos(
-      teamIds,
-      leagueIds
-    )
-    return {
-      ...leagueFixtures[0],
-      logo: leagueLogos.get(leagueFixtures[0].id),
-      matches: leagueFixtures[0].matches.map((match) => ({
-        ...match,
-        localTeam: {
-          ...match.localTeam,
-          logo: teamLogos.get(match.localTeam.id),
-        },
-        visitorTeam: {
-          ...match.visitorTeam,
-          logo: teamLogos.get(match.visitorTeam.id),
-        },
-      })),
-    }
+    const hydratedFixtures = await hydrateFixturesWithLogos(leagueFixtures)
+    return hydratedFixtures[0] ?? null
   },
 }

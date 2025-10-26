@@ -1,7 +1,9 @@
+import { Country } from './fixture'
+
 export interface League {
   id: string
   name: string
-  country: string
   isCup: boolean
+  country?: Country
   logo?: string
 }

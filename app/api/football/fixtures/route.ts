@@ -6,9 +6,9 @@ export async function GET(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams
     const date = searchParams.get('date') || 'home'
 
-    console.log(`[API] GET /api/football/fixtures?date=${date}`)
+    console.log(`[API] GET /api/football/fixtures?date=${date} (Hydrated)`)
 
-    const fixtures = await fixtureService.getFixturesByDate(date)
+    const fixtures = await fixtureService.getAndHydrateFixturesByDate(date)
 
     return NextResponse.json(fixtures, {
       headers: {
@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('[API] Error fetching fixtures:', error)
+    console.error('[API] Error fetching hydrated fixtures:', error)
     return NextResponse.json({ error: 'Error al obtener fixtures' }, { status: 500 })
   }
 }

@@ -1,6 +1,5 @@
 'use client'
 import { ThemeProvider } from './theme-provider'
-import { PWAHandler } from '../components/PWA/PWAHandler'
 import { useEffect } from 'react'
 import { QueryClientProvider } from './queryclient'
 
@@ -24,7 +23,6 @@ export function GlobalProvider({ children }: { children: React.ReactNode }) {
     <QueryClientProvider>
       <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
         {children}
-        <PWAHandler />
       </ThemeProvider>
     </QueryClientProvider>
   )

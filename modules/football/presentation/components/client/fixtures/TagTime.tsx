@@ -4,7 +4,7 @@ interface Props {
 }
 
 export const TagTime = ({ match }: Props) => {
-  const isLive = match.statusConfig?.type === 'live';
+  const isLive = match.timer ? match.timer !== '' && match.timer !== '0' : false || match.status === 'HT';
   const isScheduled = match.statusConfig?.type === 'scheduled';
   const isFinished = match.status === 'FT';
   
@@ -12,7 +12,7 @@ export const TagTime = ({ match }: Props) => {
 
   let content;
   if (isLive) {
-      if (match.status === 'HT') {
+      if (match.statusConfig?.code === 'HT') {
           content = <span className="text-[10px] lg:text-sm">DES</span>;
       } else {
           content = <span className="flex items-center justify-center text-[10px] lg:text-sm">{minute}&apos;</span>;
@@ -24,7 +24,7 @@ export const TagTime = ({ match }: Props) => {
   }
 
   return (
-    <div className={`font-semibold w-6 lg:w-9 text-center`}>
+    <div className={`font-semibold w-6 lg:w-9 text-center ${isLive ? 'time-live' : ''}`}>
       {isFinished ? <span className="text-[12px] lg:text-sm">- -</span> : content}
     </div>
   )
