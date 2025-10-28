@@ -1,13 +1,13 @@
 import { Dock, Heart, Users } from 'lucide-react'
 import Link from 'next/link'
-import { SidebarContent } from '@/modules/football/presentation/core/components/sidebar/SidebarContent'
-import { useGlobalStore } from '@/modules/football/presentation/core/store/globalStore'
+import { SidebarContent } from '@/modules/football/presentation/components/client/sidebar/SidebarContent'
+import { useGlobalStore } from '@/modules/core/store/globalStore'
 import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 import { ThemeSwitch } from '../Toggle/ThemeSwitch'
 import { InstallPWAButton } from '@/modules/core/components/PWA/InstallPWAButton'
 import { ImageWithRetry } from '../Image/ImageWithRetry'
-import { bettingProviders } from '@/shared/consts/bettingProviders'
+import { bettingProviders } from '@/lib/consts/bettingProviders'
 
 interface Props {
   title: string

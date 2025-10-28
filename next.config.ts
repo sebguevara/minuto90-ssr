@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'media.api-sports.io',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'data2.goalserve.com',
         pathname: '/**',
       },

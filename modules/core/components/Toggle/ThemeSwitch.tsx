@@ -4,7 +4,7 @@ import * as React from 'react'
 import { motion } from 'framer-motion'
 import { Moon, Sun } from 'lucide-react'
 import { useTheme } from 'next-themes'
-import { cn } from '@/shared/lib/utils'
+import { cn } from '@/lib/utils'
 
 export function ThemeSwitch() {
   const [mounted, setMounted] = React.useState(false)

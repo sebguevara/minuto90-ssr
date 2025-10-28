@@ -7,6 +7,7 @@ import ErrorBoundary from '@/modules/core/components/errors/ErrorBoundary'
 import { GlobalProvider } from '@/modules/core/providers/global-provider'
 import Script from 'next/script'
 import { Footer } from '@/modules/core/components/Footer/Footer'
+import { Suspense } from 'react'
 import './globals.css'
 
 const roboto = Roboto({
@@ -78,8 +79,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <GlobalProvider>
           <div className="flex min-h-screen flex-col items-center">
             <div className="w-full max-w-7xl px-2 md:px-4">
-              {/* <MobileHeader title="Minuto 90" /> */}
-              {/* <DesktopHeader title="Minuto 90" /> */}
+              <Suspense fallback={<div className="h-14 lg:h-16" />}>
+                <MobileHeader title="Minuto 90" />
+              </Suspense>
+              <Suspense fallback={<div className="h-14 lg:h-16" />}>
+                <DesktopHeader title="Minuto 90" />
+              </Suspense>
               <main className="flex-grow pt-2 md:pt-4 pb-8">
                 <ErrorBoundary>{children}</ErrorBoundary>
               </main>

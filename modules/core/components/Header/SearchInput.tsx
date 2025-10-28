@@ -1,10 +1,10 @@
 'use client'
 
 import * as React from 'react'
-import { useSearchStore } from '@/modules/football/presentation/core/store/useSearchStore'
+import { useSearchStore } from '@/modules/core/store/useSearchStore'
 import { Search, X } from 'lucide-react'
 import { Input } from '../ui/input'
-import { cn } from '@/shared/lib/utils'
+import { cn } from '@/lib/utils'
 
 type SearchInputProps = React.InputHTMLAttributes<HTMLInputElement>
 

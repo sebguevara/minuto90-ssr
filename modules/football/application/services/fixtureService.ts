@@ -6,7 +6,8 @@ import { formatDate, formatTime } from '@/lib/utils'
 function getTTL(dateParam: string): number {
   if (dateParam === 'live') return 10
   if (dateParam === 'home') return 60
-  if (dateParam.startsWith('d-') || dateParam.startsWith('d')) return 3600
+  // 30 minutos para partidos pasados y futuros
+  if (dateParam.startsWith('d-') || dateParam.startsWith('d')) return 1800
   return 1800
 }
 

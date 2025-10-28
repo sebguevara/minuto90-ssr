@@ -22,9 +22,9 @@ export function useFixtures({ dateParam, initialData }: UseFixturesOptions) {
   return useQuery({
     queryKey: ['fixtures', dateParam],
     queryFn: () => fetchFixtures(dateParam),
-    initialData: initialData,
+    initialData,
+    staleTime: 30 * 60 * 1000, // 30 minutos
     refetchInterval: dateParam === 'live' || dateParam === 'home' ? 15000 : false,
-    refetchOnWindowFocus: true,
-    staleTime: 10000,
+    refetchOnWindowFocus: false, // Ya está configurado globalmente
   })
 }

@@ -10,9 +10,9 @@ import {
 import { Menu, Search } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useGlobalStore } from '@/modules/football/presentation/core/store/globalStore'
+import { useGlobalStore } from '@/modules/core/store/globalStore'
 import { useTheme } from 'next-themes'
-import { useSearchStore } from '@/modules/football/presentation/core/store/useSearchStore'
+import { useSearchStore } from '@/modules/core/store/useSearchStore'
 import { ImageWithRetry } from '../Image/ImageWithRetry'
 import { SidebarMobile } from '../Sidebar/SidebarMobile'
 

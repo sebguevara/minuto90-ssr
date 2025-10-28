@@ -18,6 +18,7 @@ interface Props {
   fromQS?: string
   showDate?: boolean
   shortBadge?: boolean
+  leagueId?: string
 }
 
 export const CardMatch = ({
@@ -27,11 +28,12 @@ export const CardMatch = ({
   fromQS,
   showDate,
   shortBadge,
+  leagueId,
 }: Props) => {
   const from = fromQS || (typeof window !== 'undefined' ? window.location.search.slice(1) : '')
-  const href = `/football/partido/${generateSlug(fixture.localTeam.name)}/${generateSlug(
+  const href = `/football/partido/${generateSlug(fixture.localTeam.name)}-vs-${generateSlug(
     fixture.visitorTeam.name
-  )}-vs-${generateSlug(fixture.visitorTeam.name)}/${fixture.id}${from ? `?from=${from}` : ''} `
+  )}/${fixture.id}${leagueId ? `?leagueId=${leagueId}` : ''}${from && leagueId ? `&from=${from}` : from && !leagueId ? `?from=${from}` : ''}`
 
   const { isMatchFavorite, toggleFavoriteMatch } = useFavoriteStore()
   const isFavorite = isMatchFavorite(Number(fixture.id))

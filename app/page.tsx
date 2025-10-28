@@ -1,7 +1,9 @@
+import { StructuredData } from '@/modules/core/components/SEO/StructuredData'
 import { fixtureService } from '@/modules/football/application/services/fixtureService'
-import { LeagueFixtures } from '@/modules/football/domain/models/fixture'
 import { FixturesView } from '@/modules/football/presentation/views/FixturesView'
+import { FixturesSkeleton } from '@/modules/football/presentation/components/skeletons/FixturesSkeleton'
 import { Metadata } from 'next'
+import { Suspense } from 'react'
 
 export async function generateMetadata(): Promise<Metadata> {
   const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://www.minuto90.co'
@@ -18,13 +20,12 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ date?: string; live?: string }>
-}) {
-  
-  const params = await searchParams
+async function FixturesData() {
+  const initialFixtures = await fixtureService.getAndMergeFixtures(['home', 'd1'])
+  return <FixturesView initialFixtures={initialFixtures} dateParam='home' />
+}
+
+export default function Home() {
   const siteSchema = {
     '@context': 'https://schema.org',
     '@graph': [
@@ -51,8 +52,12 @@ export default async function Home({
     ],
   }
 
-  
-  const initialFixtures = await fixtureService.getAndMergeFixtures(['home', 'd1'])
-
-  return <FixturesView initialFixtures={initialFixtures} dateParam='home' />
+  return (
+    <>
+      <StructuredData data={siteSchema} />
+      <Suspense fallback={<FixturesSkeleton />}>
+        <FixturesData />
+      </Suspense>
+    </>
+  )
 }

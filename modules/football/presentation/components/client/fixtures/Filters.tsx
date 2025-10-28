@@ -21,10 +21,13 @@ const generateDateOptions = () => {
     const date = addDays(today, i)
     const value = i === 0 ? 'home' : i > 0 ? `d${i}` : `d-${Math.abs(i)}`
     let label = format(date, 'E dd MMM', { locale: es })
-    if (i === 0) label = `Hoy, ${label}`
-    if (i === -1) label = `Ayer, ${label}`
-    if (i === 1) label = `Mañana, ${label}`
-    options.push({ value, label: label.charAt(0).toUpperCase() + label.slice(1) })
+    if (i === 0) label = 'Hoy'
+    else if (i === -1) label = 'Ayer'
+    else if (i === 1) label = 'Mañana'
+    else {
+      label = label.charAt(0).toUpperCase() + label.slice(1)
+    }
+    options.push({ value, label })
   }
   return options
 }
@@ -86,9 +89,9 @@ export const Filters = ({
 
   return (
     <div className="flex flex-col md:flex-row gap-2 w-full lg:w-max justify-between">
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex items-center justify-between gap-2 order-1 md:order-2">
         <Select value={date} onValueChange={handleDateChange} disabled={favoritesOnly}>
-          <SelectTrigger className="w-full md:w-[240px]">
+          <SelectTrigger className="w-full md:w-[170px]">
             <CalendarIcon size={14} />
             <SelectValue placeholder="Selecciona una fecha" />
           </SelectTrigger>
@@ -101,7 +104,7 @@ export const Filters = ({
           </SelectContent>
         </Select>
       </div>
-      <div className="flex items-center justify-between gap-2 lg:gap-2 mt-1 md:mt-0">
+      <div className="flex items-center justify-between gap-2 lg:gap-2 mt-1 md:mt-0 order-2 md:order-1">
         <div className="flex items-center gap-2">
           <Toggle
             aria-label="Favoritos"

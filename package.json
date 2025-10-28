@@ -14,6 +14,7 @@
     "redis:start": "docker-compose up -d",
     "redis:stop": "docker-compose down",
     "redis:logs": "docker-compose logs -f redis",
+    "prefetch:logos": "tsx --env-file=.env.local --env-file=.env scripts/prefetch-logos.ts",
     "clean": "rm -rf .next node_modules",
     "postinstall": "npm run type-check"
   },
@@ -40,6 +41,7 @@
     "lucide-react": "0.546.0",
     "next": "16.0.0-canary.13",
     "next-themes": "0.4.6",
+    "prettier": "^3.6.2",
     "react": "19.1.0",
     "react-day-picker": "^9.11.1",
     "react-dom": "19.1.0",
@@ -55,9 +57,11 @@
     "@types/node": "20",
     "@types/react": "19",
     "@types/react-dom": "19",
+    "dotenv": "^16.6.1",
     "eslint": "9",
     "eslint-config-next": "15.5.6",
     "tailwindcss": "4",
+    "tsx": "^4.20.0",
     "tw-animate-css": "1.4.0",
     "typescript": "5"
   }

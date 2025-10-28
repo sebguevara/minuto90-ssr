@@ -202,11 +202,43 @@
   }
   body {
     @apply bg-background text-foreground text-base;
+    scrollbar-gutter: stable;
   }
   html {
     scrollbar-width: thin;
     scrollbar-gutter: stable;
     scrollbar-color: var(--primary) var(--background);
+    overflow-y: scroll !important;
+  }
+  
+  body {
+    overflow-y: auto;
+  }
+  
+  /* Forzar scrollbar visible en navegadores webkit (Chrome, Edge, Safari) */
+  html::-webkit-scrollbar {
+    width: 12px;
+    display: block !important;
+  }
+  
+  html::-webkit-scrollbar-track {
+    background: var(--background);
+  }
+  
+  html::-webkit-scrollbar-thumb {
+    background: var(--primary);
+    border-radius: 6px;
+  }
+  
+  html::-webkit-scrollbar-thumb:hover {
+    background: var(--accent);
+  }
+  
+  /* Prevenir que Radix UI oculte el scrollbar cuando bloquea el scroll */
+  body[data-scroll-locked] {
+    overflow: hidden !important;
+    padding-right: 0 !important;
+    margin-right: 0 !important;
   }
 }
 

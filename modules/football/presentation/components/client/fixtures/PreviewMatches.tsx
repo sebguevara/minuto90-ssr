@@ -121,7 +121,7 @@ export const PreviewMatches = ({
             </AccordionTrigger>
             <AccordionContent className="flex flex-col gap-2 pt-2">
               {league.matches.map((match) => (
-                <CardMatch key={`${league.id}_${match.id}`} fixture={match} />
+                <CardMatch key={`${league.id}_${match.id}`} fixture={match} leagueId={league.id} />
               ))}
             </AccordionContent>
           </AccordionItem>

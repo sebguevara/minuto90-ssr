@@ -63,15 +63,16 @@ export const fixtureRepository = {
     }
 
     const data = await fetchFromGoalServe<GoalServeFixturesResponse>(path)
-    return fixtureMapper.toDomain(data)
+    const leagueFixtures = fixtureMapper.toDomain(data)
+
+    return hydrateFixturesWithLogos(leagueFixtures)
   },
 
   async getAndHydrateFixturesByDate(
     dateParam: string,
     filters: FixtureFilters = {}
   ): Promise<LeagueFixtures[]> {
-    const leagueFixtures = await this.getFixturesByDate(dateParam, filters)
-    return hydrateFixturesWithLogos(leagueFixtures)
+    return this.getFixturesByDate(dateParam, filters)
   },
 
   async getFixtureById(leagueId: string, id: string): Promise<LeagueFixtures | null> {

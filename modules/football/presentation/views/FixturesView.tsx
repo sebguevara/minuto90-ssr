@@ -1,4 +1,3 @@
-// sebguevara/minuto90-ssr/minuto90-ssr-ae3f061568e172e16c8c3f11c52c20f7774632d1/modules/football/presentation/views/FixturesView.tsx
 'use client'
 
 import { useState, useMemo, useEffect } from 'react'
@@ -6,12 +5,13 @@ import { useSearchParams } from 'next/navigation'
 import { LeagueFixtures } from '@/modules/football/domain/models/fixture'
 import { useFixtures } from '@/modules/football/presentation/hooks/use-fixtures'
 import { ErrorMessage } from '@/modules/core/components/errors/ErrorMessage'
-import { MatchListSkeleton } from '@/modules/core/components/loadings/MatchListSkeleton'
 import { PreviewMatches } from '../components/client/fixtures/PreviewMatches'
 import { useFavoriteStore } from '@/modules/core/store/useFavoriteStore'
 import { useSearchStore } from '@/modules/core/store/useSearchStore'
-import { strip, getBrowserTimezone, formatDate, formatTime } from '@/lib/utils'
+import { strip, getBrowserTimezone, getTodayDate, formatDate, formatTime } from '@/lib/utils'
 import { PRESELECTED_LEAGUES } from '@/lib/consts/football/leagues'
+import { Sidebar } from '../components/client/sidebar/Sidebar'
+import { FixturesContentSkeleton } from '../components/skeletons/FixturesSkeleton'
 
 interface FixturesViewProps {
   initialFixtures: LeagueFixtures[]
@@ -38,57 +38,66 @@ export function FixturesView({ initialFixtures, dateParam: initialDateParam }: F
   )
   const [showOdds, setShowOdds] = useState(() => parseQueryParam(searchParams.get('odds')))
   const [isExpanded, setIsExpanded] = useState(false)
-  const [timezone, setTimezone] = useState('UTC');
+  const [timezone] = useState(() => getBrowserTimezone())
 
-  const { data: fixtures, isLoading, isError, refetch } = useFixtures({
+  const { data: fixtures, isLoading, isError, isFetching, refetch } = useFixtures({
     dateParam: date,
     initialData: date === initialDateParam ? initialFixtures : undefined,
   })
 
   useEffect(() => {
-    setTimezone(getBrowserTimezone());
     setContext('home')
     return () => setContext(null)
   }, [setContext])
 
   const processedFixtures = useMemo(() => {
-    if (!fixtures) return [];
-    
+    if (!fixtures) return []
+
+    const today = getTodayDate()
+
     return fixtures.map((league) => ({
       ...league,
-      matches: league.matches.map((match) => {
-        if (!match.date || !match.time) return match;
+      matches: league.matches
+        .map((match) => {
+          if (!match.date || !match.time) return match
 
-        try {
-          const formattedDate = match.date.split('.').reverse().join('-');
-          const utcDate = new Date(`${formattedDate}T${match.time}Z`);
+          try {
+            const formattedDate = match.date.split('.').reverse().join('-')
+            const utcDate = new Date(`${formattedDate}T${match.time}Z`)
 
-          if (isNaN(utcDate.getTime())) {
-            console.warn(`Fecha inválida detectada para el partido ID ${match.id}: ${match.date} ${match.time}`);
-            return match;
+            if (isNaN(utcDate.getTime())) {
+              console.warn(
+                `Fecha inválida detectada para el partido ID ${match.id}: ${match.date} ${match.time}`
+              )
+              return { ...match, time: '--:--' }
+            }
+
+            const localDate = formatDate(utcDate, timezone)
+            const localTime = formatTime(utcDate, timezone)
+
+            return {
+              ...match,
+              date: localDate,
+              time: localTime,
+            }
+          } catch (e) {
+            console.error(`Error al procesar la fecha para el partido ID ${match.id}:`, e)
+            return { ...match, time: '--:--' }
           }
-          
-          const localDate = formatDate(utcDate, timezone)
-          const localTime = formatTime(utcDate, timezone)
-  
-          return {
-            ...match,
-            date: localDate,
-            time: localTime,
+        })
+        .filter((match) => {
+          if (date === 'home') {
+            return match.date === today
           }
-        } catch (e) {
-            console.error(`Error al procesar la fecha para el partido ID ${match.id}:`, e);
-            return match;
-        }
-      }),
-    }))
-
-  }, [fixtures, timezone]);
+          return true
+        }),
+    })).filter((league) => league.matches.length > 0)
+  }, [fixtures, timezone, date])
 
   const filteredLeagues = useMemo(() => {
     if (!processedFixtures) return []
     let leagues = processedFixtures
-    
+
     if (favoritesOnly) {
       const favoriteMatchIds = new Set(Object.keys(favoriteMatches).map(Number))
       leagues = leagues
@@ -100,48 +109,63 @@ export function FixturesView({ initialFixtures, dateParam: initialDateParam }: F
         }))
         .filter((league) => league.matches.length > 0)
     } else if (liveOnly) {
+      // Filtrar localmente solo los partidos en vivo
       leagues = leagues
         .map((league) => ({
           ...league,
-          matches: league.matches.filter((m) => !['FT', 'NS', 'PST', 'CANC'].includes(m.status)),
+          matches: league.matches.filter((m) => m.statusConfig?.type === 'live'),
         }))
         .filter((league) => league.matches.length > 0)
     } else if (scheduledOnly) {
       leagues = leagues
-        .map((league) => ({ ...league, matches: league.matches.filter((m) => m.status === 'NS') }))
+        .map((league) => ({ 
+          ...league, 
+          matches: league.matches.filter((m) => 
+            m.statusConfig?.type === 'scheduled' || ['NS', 'TBD'].includes(m.status)
+          ) 
+        }))
         .filter((league) => league.matches.length > 0)
     } else if (finishedOnly) {
       leagues = leagues
-        .map((league) => ({ ...league, matches: league.matches.filter((m) => m.status === 'FT') }))
+        .map((league) => ({ 
+          ...league, 
+          matches: league.matches.filter((m) => 
+            m.statusConfig?.type === 'finished' || ['FT', 'AET', 'PEN'].includes(m.status)
+          ) 
+        }))
         .filter((league) => league.matches.length > 0)
     }
-    
-    const strippedQuery = strip(query);
+
+    const strippedQuery = strip(query)
     if (strippedQuery) {
-        leagues = leagues.map(league => ({
-            ...league,
-            matches: league.matches.filter(match => 
-                strip(league.name).includes(strippedQuery) ||
-                strip(match.localTeam.name).includes(strippedQuery) ||
-                strip(match.visitorTeam.name).includes(strippedQuery)
-            )
-        })).filter(league => league.matches.length > 0);
+      leagues = leagues
+        .map((league) => ({
+          ...league,
+          matches: league.matches.filter(
+            (match) =>
+              strip(league.name).includes(strippedQuery) ||
+              strip(match.localTeam.name).includes(strippedQuery) ||
+              strip(match.visitorTeam.name).includes(strippedQuery)
+          ),
+        }))
+        .filter((league) => league.matches.length > 0)
     }
 
     leagues.sort((a, b) => {
-        const aIsPreselected = PRESELECTED_LEAGUES.includes(a.id);
-        const bIsPreselected = PRESELECTED_LEAGUES.includes(b.id);
-        if (aIsPreselected && !bIsPreselected) return -1;
-        if (!aIsPreselected && bIsPreselected) return 1;
-        return (a.country?.name || 'zzz').localeCompare(b.country?.name || 'zzz');
-    });
-    
+      const aIsPreselected = PRESELECTED_LEAGUES.includes(a.id)
+      const bIsPreselected = PRESELECTED_LEAGUES.includes(b.id)
+      if (aIsPreselected && !bIsPreselected) return -1
+      if (!aIsPreselected && bIsPreselected) return 1
+      return (a.country?.name || 'zzz').localeCompare(b.country?.name || 'zzz')
+    })
+
     return leagues
   }, [processedFixtures, liveOnly, scheduledOnly, finishedOnly, favoritesOnly, favoriteMatches, query])
 
   const renderContent = () => {
-    if (isLoading) {
-      return <MatchListSkeleton />
+    // Mostrar skeleton cuando está cargando datos nuevos (cambio de fecha)
+    if (isFetching && date !== initialDateParam) {
+      return <FixturesContentSkeleton />
     }
 
     if (filteredLeagues.length === 0) {
@@ -189,6 +213,7 @@ export function FixturesView({ initialFixtures, dateParam: initialDateParam }: F
   return (
     <div className="flex flex-col lg:flex-row gap-4">
       <aside className="hidden lg:block w-max shrink-0 sticky top-[90px] self-start">
+        <Sidebar />
       </aside>
       <div className="flex-1">{renderContent()}</div>
     </div>
