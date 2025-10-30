@@ -1,225 +1,223 @@
 'use client'
 
-import { useMatch } from '../hooks/use-match'
-import { ImageWithRetry } from '@/modules/core/components/Image/ImageWithRetry'
-import { Badge } from '@/modules/core/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/modules/core/components/ui/card'
+import { useEffect, useMemo, useState } from 'react'
+import { MatchPreviewSection } from '@/modules/football/presentation/components/client/match/MatchPreview'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/modules/core/components/ui/tabs'
+import { LineupSection } from '@/modules/football/presentation/components/client/match/lineup/LineupSection'
+import { OddsSection } from '@/modules/football/presentation/components/client/match/odds/OddsSection'
 import { Skeleton } from '@/modules/core/components/ui/skeleton'
-import { ArrowLeft, Calendar, MapPin } from 'lucide-react'
-import { Button } from '@/modules/core/components/ui/button'
-import { useRouter } from 'next/navigation'
-import { abbreviateTeamName } from '@/lib/utils'
-import { format } from 'date-fns'
-import { es } from 'date-fns/locale'
+import { buildSquadUI } from '@/modules/football/presentation/utils/buildSquadUI'
+import { SummarySection } from '@/modules/football/presentation/components/client/match/summary/SumarySection'
+import { StatsSection } from '@/modules/football/presentation/components/client/match/stats/statsSection'
+import { hasSomeStat, hasSomeXI } from '@/modules/football/presentation/utils/main'
+import { GoBack } from '@/modules/football/presentation/components/client/match/GoBack'
+import { DetailsSection } from '@/modules/football/presentation/components/client/match/details/DetailSection'
+import { ScrollArea, ScrollBar } from '@/modules/core/components/ui/scroll-area'
+import { StandingPreviewSection } from '@/modules/football/presentation/components/client/match/standing/StandingPreviewSection'
+import { Match } from '@/modules/football/domain/models/fixture'
+import { MatchDetails } from '../../domain/models/commentary'
+import { getStatusConfig } from '@/lib/utils'
 
-interface MatchViewProps {
-  matchId: string
-  leagueId?: string
+interface Props {
+  id: string
+  leagueId: string
+  fixture: MatchDetails
+  // predictions: Prediction
+  // standings: StandingsLeague[]
+  // homeSquad: Player[]
+  // awaySquad: Player[]
+  // isLoading: boolean
+  // isPredictionsLoading: boolean
 }
 
-export function MatchView({ matchId, leagueId }: MatchViewProps) {
-  const router = useRouter()
-  const { data, isLoading, error } = useMatch(matchId, leagueId || '')
+export default function MatchView({ id, leagueId, fixture }: Props) {
+  const [data, setData] = useState<MatchDetails | null>(fixture ?? null)
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-10 w-32" />
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Skeleton className="h-32 w-full" />
-            <Skeleton className="h-24 w-full" />
-          </CardContent>
-        </Card>
-      </div>
-    )
+  useEffect(() => {
+    setData(fixture ?? null)
+  }, [id, leagueId])
+
+  console.log(data)
+
+  const isReady = !!data
+
+  const hasStats = useMemo(() => (data ? hasSomeStat(data.stats) : false), [data])
+  const hasLineup = useMemo(() => (data ? hasSomeXI(data.lineups) : false), [data])
+  // const hasStandings = useMemo(
+  //   () => fixture?.tournament.id,
+  //   [fixture?.tournament.id]
+  // )
+
+  const dynamicTabs = useMemo(
+    () =>
+      [
+        { id: '1', label: 'Resumen', value: 'summary' },
+        { id: 'x', label: 'Detalles', value: 'details' },
+        ...(hasStats ? [{ id: '2', label: 'Estadísticas', value: 'statistics' }] : []),
+        ...(hasLineup ? [{ id: '3', label: 'Alineaciones', value: 'lineup' }] : []),
+        // ...(hasStandings ? [{ id: '5', label: 'Posiciones', value: 'standing' }] : []),
+        { id: '4', label: 'Cuotas', value: 'odds' },
+      ] as const,
+    [hasStats, hasLineup]
+  )
+
+  const tabValues = useMemo(() => dynamicTabs.map((t) => t.value), [dynamicTabs])
+  const dynamicTabsKey = useMemo(() => tabValues.join('|'), [tabValues])
+  const [tab, setTab] = useState<string>(dynamicTabs[0]?.value ?? 'summary')
+
+  useEffect(() => {
+    const first = dynamicTabs[0]?.value ?? 'summary'
+    let urlTab: string | null = null
+    if (typeof window !== 'undefined') {
+      urlTab = new URLSearchParams(window.location.search).get('tab')
+    }
+    setTab(urlTab && tabValues.includes(urlTab) ? urlTab : first)
+  }, [dynamicTabsKey])
+
+  const onTabChange = (next: string) => {
+    const applyChange = () => {
+      setTab(next)
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href)
+        const first = dynamicTabs[0]?.value ?? 'summary'
+        if (next === first) url.searchParams.delete('tab')
+        else url.searchParams.set('tab', next)
+        history.replaceState(null, '', url.toString())
+      }
+    }
+
+    // Usar View Transitions API para animar el cambio de pestaña si está disponible
+    // @ts-ignore - startViewTransition aún no está en los tipos estándar
+    if (typeof document !== 'undefined' && document.startViewTransition) {
+      // @ts-ignore
+      document.startViewTransition(applyChange)
+    } else {
+      applyChange()
+    }
   }
 
-  if (error || !data) {
+  useEffect(() => {
+    if (!data) return
+    const status = getStatusConfig(data.match.status)
+    const isLive = status.type === 'live'
+    if (!isLive) return
+
+    let cancelled = false
+    const fetchUpdate = async () => {
+      try {
+        const res = await fetch(`/api/football/commentary/${id}?leagueId=${leagueId}`, {
+          cache: 'no-store',
+        })
+        if (!res.ok) return
+        const next: MatchDetails = await res.json()
+        if (!cancelled) setData(next)
+      } catch (_) {
+      }
+    }
+
+    fetchUpdate()
+    const intervalId = setInterval(fetchUpdate, 15000)
+    return () => {
+      cancelled = true
+      clearInterval(intervalId)
+    }
+  }, [data?.match.status, id, leagueId])
+
+  if (!isReady) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4">
-        <p className="text-muted-foreground">No se pudo cargar la información del partido</p>
-        <Button onClick={() => router.back()} variant="outline">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Volver
-        </Button>
-      </div>
-    )
-  }
-
-  const { match, league } = data
-  const isLive = match.statusConfig?.type === 'live'
-
-  return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Botón volver */}
-      <Button onClick={() => router.back()} variant="ghost" size="sm">
-        <ArrowLeft className="mr-2 h-4 w-4" />
-        Volver
-      </Button>
-
-      {/* Información de la liga */}
-      <div className="flex items-center gap-3">
-        {league.logo && (
-          <div className="relative w-8 h-8">
-            <ImageWithRetry
-              src={league.logo}
-              alt={league.name}
-              fill
-              sizes="32px"
-              className="object-contain"
-            />
-          </div>
-        )}
-        <div>
-          <h2 className="text-sm font-semibold">{league.name}</h2>
-          {league.country && (
-            <p className="text-xs text-muted-foreground">{league.country.name}</p>
-          )}
+      <div
+        key={id}
+        className="relative container mx-auto min-h-screen w-full flex flex-col p-2 md:px-0">
+        <GoBack className="top-[46px] left-2" />
+        <div className="flex flex-col gap-4 mt-20 md:mt-8">
+          <Skeleton className="w-full h-44 md:h-50" />
+        </div>
+        <div className="flex gap-4 mt-6">
+          <Skeleton className="w-full h-8" />
+          <Skeleton className="w-full h-8" />
+          <Skeleton className="w-full h-8" />
+          <Skeleton className="w-full h-8" />
+        </div>
+        <div className="flex flex-col gap-4 mt-4">
+          <Skeleton className="w-24 h-6 md:w-32 md:h-8" />
+          <Skeleton className="w-full h-44 md:h-50" />
         </div>
       </div>
+    )
+  }
 
-      {/* Card principal del partido */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg">Detalles del Partido</CardTitle>
-            <Badge
-              variant="outline"
-              className={`${match.statusConfig?.className} font-semibold`}>
-              {match.statusConfig?.label || match.status}
-            </Badge>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {/* Marcador */}
-          <div className="flex items-center justify-between gap-4">
-            {/* Equipo Local */}
-            <div className="flex-1 flex flex-col items-center gap-3">
-              <div className="relative w-20 h-20">
-                <ImageWithRetry
-                  src={match.localTeam.logo || ''}
-                  alt={match.localTeam.name}
-                  fill
-                  sizes="80px"
-                  className="object-contain"
-                />
-              </div>
-              <h3 className="text-center font-semibold text-sm md:text-base">
-                {abbreviateTeamName(match.localTeam.name)}
-              </h3>
-            </div>
+  // const homeUI = buildSquadUI(fixture.lineup.home, fixture.teams.home, fixture.events, homeSquad)
+  // const awayUI = buildSquadUI(fixture.lineup.away, fixture.teams.away, fixture.events, awaySquad)
 
-            {/* Marcador */}
-            <div className="flex flex-col items-center gap-2">
-              <div className="flex items-center gap-4">
-                <div className="text-4xl md:text-5xl font-bold">
-                  {match.localTeam.goals}
-                </div>
-                <div className="text-2xl text-muted-foreground">-</div>
-                <div className="text-4xl md:text-5xl font-bold">
-                  {match.visitorTeam.goals}
-                </div>
-              </div>
-              {match.timer && isLive && (
-                <div className="text-sm font-medium text-destructive animate-pulse">
-                  {match.timer}'
-                </div>
-              )}
-              {match.htScore && (
-                <div className="text-xs text-muted-foreground">
-                  HT: {match.htScore}
-                </div>
-              )}
-              {match.ftScore && (
-                <div className="text-xs text-muted-foreground">
-                  FT: {match.ftScore}
-                </div>
-              )}
-            </div>
+  return (
+    <div
+      className="relative container mx-auto w-full flex flex-col p-2 md:p-0"
+      suppressHydrationWarning>
+      <GoBack className="top-[46px] left-2" />
+      {data && <MatchPreviewSection fixture={data} />}
 
-            {/* Equipo Visitante */}
-            <div className="flex-1 flex flex-col items-center gap-3">
-              <div className="relative w-20 h-20">
-                <ImageWithRetry
-                  src={match.visitorTeam.logo || ''}
-                  alt={match.visitorTeam.name}
-                  fill
-                  sizes="80px"
-                  className="object-contain"
-                />
-              </div>
-              <h3 className="text-center font-semibold text-sm md:text-base">
-                {abbreviateTeamName(match.visitorTeam.name)}
-              </h3>
-            </div>
-          </div>
-
-          {/* Información adicional */}
-          <div className="border-t pt-4 space-y-2">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar className="h-4 w-4" />
-              <span>
-                {format(new Date(match.date), "EEEE, d 'de' MMMM 'de' yyyy", {
-                  locale: es,
-                })}
-              </span>
-              <span className="ml-2">{match.time}</span>
-            </div>
-            {match.venue && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4" />
-                <span>{match.venue}</span>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Eventos del partido */}
-      {match.events && match.events.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Eventos del Partido</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {match.events.map((event, index) => (
-                <div key={index} className="flex items-center gap-3 text-sm">
-                  <div className="w-12 text-center font-semibold text-muted-foreground">
-                    {event.minute}'
-                  </div>
-                  <div className="flex-1">
-                    <div className="font-medium">{event.player?.name}</div>
-                    {event.assist && (
-                      <div className="text-xs text-muted-foreground">
-                        Asistencia: {event.assist?.name || ''}
-                      </div>
-                    )}
-                  </div>
-                  <div className="text-xs px-2 py-1 bg-muted rounded">
-                    {event.type}
-                  </div>
-                </div>
+      <div className="w-full flex items-center mt-4">
+        <Tabs value={tab} onValueChange={onTabChange} className="w-full">
+          <ScrollArea className="w-full whitespace-nowrap">
+            <TabsList className="w-full min-w-max p-0 justify-start border-b rounded-none bg-background">
+              {dynamicTabs.map((t) => (
+                <TabsTrigger
+                  key={t.id}
+                  value={t.value}
+                  className="rounded-none h-full data-[state=active]:shadow-none border-b-2 border-transparent data-[state=active]:border-b-primary">
+                  <span className="text-[13px]">{t.label}</span>
+                </TabsTrigger>
               ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </TabsList>
+            <ScrollBar orientation="horizontal" className="h-0.5" />
+          </ScrollArea>
 
-      {/* Mensaje de comentarios disponibles */}
-      {match.commentaryAvailable && (
-        <Card>
-          <CardContent className="py-4">
-            <p className="text-sm text-muted-foreground text-center">
-              💬 Comentarios disponibles para este partido
-            </p>
-          </CardContent>
-        </Card>
-      )}
+          {dynamicTabs.map((t) => (
+            <TabsContent key={t.id} value={t.value}>
+              {t.value === 'summary' && data && (
+                <SummarySection fixture={data} />
+              )}
+
+              {/* {t.value === 'details' && (
+                <DetailsSection
+                  prediction={predictions || ({} as Prediction)}
+                  standings={standings}
+                  homeId={fixture.teams.home.id}
+                  awayId={fixture.teams.away.id}
+                  leagueId={fixture.league.id}
+                  leagueName={fixture.league.name}
+                />
+              )}
+
+              {t.value === 'statistics' && (
+                <StatsSection key={id} statistics={fixture.statistics} />
+              )}
+
+              {t.value === 'lineup' && (
+                <LineupSection
+                  key={id}
+                  home={fixture.lineup.home}
+                  away={fixture.lineup.away}
+                  colors={colors}
+                  homeUI={homeUI}
+                  awayUI={awayUI}
+                />
+              )}
+
+              {t.value === 'standing' && (
+                <StandingPreviewSection
+                  standings={standings}
+                  homeId={fixture.teams.home.id}
+                  awayId={fixture.teams.away.id}
+                  leagueId={fixture.league.id}
+                  leagueName={fixture.league.name}
+                />
+              )}
+              {t.value === 'odds' && data && <OddsSection key={id} fixture={data.id} />} */}
+            </TabsContent>
+          ))}
+        </Tabs>
+      </div>
     </div>
   )
 }

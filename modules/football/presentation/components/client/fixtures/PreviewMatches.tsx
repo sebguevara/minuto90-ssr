@@ -48,7 +48,7 @@ export const PreviewMatches = ({
   const needsPagination = filteredLeagues.length > displayedLeagues.length
 
   return (
-    <div className="flex flex-col gap-3 px-1 rounded-lg mt-14 lg:mt-0">
+    <div className="flex flex-col gap-3 px-1 rounded-lg">
       <PreviewHeader title={title} setExpanded={setIsExpanded} {...filterProps} />
       {displayedLeagues.length === 0 && (
         <div className="flex flex-col gap-2 w-full items-center py-4">
@@ -62,12 +62,13 @@ export const PreviewMatches = ({
       <Accordion
         type="multiple"
         value={openAccordions}
+        defaultValue={PRESELECTED_LEAGUES}
         onValueChange={setOpenAccordions}
         className="w-full space-y-2">
         {displayedLeagues.map((league) => (
           <AccordionItem
-            key={`${league.id}_${league.name ?? 'default'}`}
-            value={`${league.id}_${league.name ?? 'default'}`}
+          key={`${league.id}_${league.name ?? 'default'}`}
+          value={league.id}
             className="border-b-0">
             <AccordionTrigger className="flex gap-2 text-base lg:text-lg font-semibold items-center px-2 py-2 rounded-md hover:no-underline bg-card">
               <div className="flex items-center justify-between flex-grow">
@@ -77,7 +78,7 @@ export const PreviewMatches = ({
                   <span className="relative w-5 h-5 lg:w-7 lg:h-7">
                     <ImageWithRetry
                       src={
-                        league.country?.name === 'World'
+                        league.country?.code === 'world'
                           ? league.logo ?? '/globe.svg'
                           : league.country?.flag
                           ? league.country.flag
@@ -121,7 +122,12 @@ export const PreviewMatches = ({
             </AccordionTrigger>
             <AccordionContent className="flex flex-col gap-2 pt-2">
               {league.matches.map((match) => (
-                <CardMatch key={`${league.id}_${match.id}`} fixture={match} leagueId={league.id} />
+                <CardMatch 
+                  key={`${league.id}_${match.staticId}`} 
+                  fixture={match} 
+                  leagueId={league.id}
+                  leagueName={league.name}
+                />
               ))}
             </AccordionContent>
           </AccordionItem>

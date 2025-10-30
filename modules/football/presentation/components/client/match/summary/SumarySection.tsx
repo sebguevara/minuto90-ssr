@@ -1,56 +1,42 @@
 'use client'
 
 import React from 'react'
-import { MatchEvent, MatchPreviewStatus } from '@football/domain/entities/Match'
+import { MatchDetails, MatchEvent, MatchTeam, TeamEvents } from '@/modules/football/domain/models/commentary'
 import { EventsSection } from './EventsSection'
 import { ShortSummary } from './ShortSummary'
 import PredictionSection from './PredictionSection'
-import { Prediction } from '@/modules/football/domain/entities/Predictions'
-import { Team } from '@football/domain/entities/Team'
+// import { Prediction } from '@/modules/football/domain/models/prediction'
 import { Skeleton } from '@/modules/core/components/ui/skeleton'
 
 type Props = {
-  events: MatchEvent[]
-  prediction: Prediction
-  teams: { home: Team; away: Team }
-  colors: { home: string; away: string }
-  homeTeamId: number
-  isLoading: boolean
-  status: MatchPreviewStatus
+  fixture: MatchDetails
 }
 
 export const SummarySection: React.FC<Props> = ({
-  events,
-  prediction,
-  teams,
-  homeTeamId,
-  colors,
-  isLoading,
-  status,
+  fixture,
 }) => {
-  const filteredEvents = events.filter((event) => event.player.name !== null)
 
   return (
     <section className="flex flex-col">
       <header className="pt-4 mb-4">
         <h3 className="text-sm font-semibold">Resumen</h3>
       </header>
-      {filteredEvents.length > 0 && (
+      {fixture.events.goals.length > 0 && (
         <>
           <ShortSummary
-            key={homeTeamId + '-short'}
-            events={filteredEvents}
-            homeTeamId={homeTeamId}
+            key={fixture.match.localTeam.id + '-short'}
+            events={fixture.events}
+            homeTeamId={fixture.match.localTeam.id}
           />
           <EventsSection
-            key={homeTeamId + '-events'}
-            events={filteredEvents}
-            homeTeamId={homeTeamId}
-            status={status}
+            key={fixture.match.localTeam.id + '-events'}
+            events={fixture.events}
+            teams={[fixture.match.localTeam, fixture.match.visitorTeam]}
+            status={fixture.match.status}
           />
         </>
       )}
-      {isLoading
+      {/* {isLoading
         ? predictionSkeleton()
         : prediction &&
           prediction.fixtureId && (
@@ -60,7 +46,7 @@ export const SummarySection: React.FC<Props> = ({
               teams={teams}
               colors={colors}
             />
-          )}
+          )} */}
     </section>
   )
 }

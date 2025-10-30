@@ -4,10 +4,8 @@ import { Card, CardContent, CardHeader } from '@/modules/core/components/ui/card
 export function MatchSkeleton() {
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      {/* Botón volver */}
       <Skeleton className="h-9 w-24" />
 
-      {/* Información de la liga */}
       <div className="flex items-center gap-3">
         <Skeleton className="w-8 h-8 rounded-md" />
         <div className="space-y-2">
@@ -16,7 +14,6 @@ export function MatchSkeleton() {
         </div>
       </div>
 
-      {/* Card principal del partido */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -25,15 +22,12 @@ export function MatchSkeleton() {
           </div>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Marcador */}
           <div className="flex items-center justify-between gap-4">
-            {/* Equipo Local */}
             <div className="flex-1 flex flex-col items-center gap-3">
               <Skeleton className="w-20 h-20 rounded-full" />
               <Skeleton className="h-5 w-32" />
             </div>
 
-            {/* Marcador */}
             <div className="flex flex-col items-center gap-2">
               <div className="flex items-center gap-4">
                 <Skeleton className="h-16 w-16" />
@@ -43,14 +37,12 @@ export function MatchSkeleton() {
               <Skeleton className="h-4 w-16" />
             </div>
 
-            {/* Equipo Visitante */}
             <div className="flex-1 flex flex-col items-center gap-3">
               <Skeleton className="w-20 h-20 rounded-full" />
               <Skeleton className="h-5 w-32" />
             </div>
           </div>
 
-          {/* Información adicional */}
           <div className="border-t pt-4 space-y-2">
             <Skeleton className="h-5 w-64" />
             <Skeleton className="h-5 w-48" />
@@ -58,7 +50,6 @@ export function MatchSkeleton() {
         </CardContent>
       </Card>
 
-      {/* Eventos skeleton */}
       <Card>
         <CardHeader>
           <Skeleton className="h-6 w-48" />

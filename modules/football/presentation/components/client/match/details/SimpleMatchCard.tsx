@@ -2,7 +2,7 @@
 
 import { MatchPreview } from '@/modules/football/domain/entities/Match'
 import { ImageWithRetry } from '@/modules/core/components/Image/ImageWithRetry'
-import { generateSlug } from '@/shared/lib/utils'
+import { generateMatchUrl } from '@/lib/utils'
 import Link from 'next/link'
 
 interface Props {
@@ -53,9 +53,14 @@ export const SimpleMatchCard = ({ fixture, teamId }: Props) => {
   const isHome = fixture.teams.home.id === teamId
   const opponent = isHome ? fixture.teams.away : fixture.teams.home
 
-  const linkHref = `/football/partido/${generateSlug(fixture.league.name)}/${generateSlug(
-    fixture.teams.home.name
-  )}-vs-${generateSlug(fixture.teams.away.name)}/${fixture.id}`
+  // Genera la URL SEO-friendly con el ID incluido en el slug
+  const linkHref = generateMatchUrl({
+    homeTeam: fixture.teams.home.name,
+    awayTeam: fixture.teams.away.name,
+    leagueName: fixture.league.name,
+    matchId: (fixture as any).staticId || fixture.id,
+    leagueId: fixture.league.id
+  })
 
   return (
     <Link href={linkHref} className="block">

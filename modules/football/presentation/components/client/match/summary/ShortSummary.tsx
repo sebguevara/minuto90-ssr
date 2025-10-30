@@ -1,26 +1,26 @@
 'use client'
 
 import React from 'react'
-import { MatchEvent } from '@football/domain/entities/Match'
-import { formatMinute } from '../../utils/summary'
+import { MatchEvent } from '@/modules/football/domain/models/commentary'
 import { Square } from 'lucide-react'
+import { TeamEvents } from '@/modules/football/domain/models/commentary'
+import { formatMinute } from '@/modules/football/presentation/utils/summary'
 
 type Props = {
-  events: MatchEvent[]
-  homeTeamId: number
+  events: TeamEvents
+  homeTeamId: string
 }
 
 export const ShortSummary: React.FC<Props> = ({ events, homeTeamId }) => {
-  const isGoal = (e: MatchEvent) => e.type === 'Goal' && e.detail !== 'Missed Penalty'
-  const isRed = (e: MatchEvent) =>
-    e.type === 'Card' && (e.detail || '').toLowerCase().includes('red')
+  const isGoal = (e: MatchEvent) => e.comment === 'Goal'
+  const isRed = (e: MatchEvent) => e.comment === 'Red Card'
 
   const split = (pred: (e: MatchEvent) => boolean) => {
     const sort = (a: MatchEvent, b: MatchEvent) =>
-      a.time.elapsed - b.time.elapsed || (a.time.extra ?? 0) - (b.time.extra ?? 0)
+      Number(a.minute) - Number(b.minute) || (Number(a.extra_min ?? 0) - Number(b.extra_min ?? 0))
 
-    const home = events.filter((e) => e.team.id === homeTeamId && pred(e)).sort(sort)
-    const away = events.filter((e) => e.team.id !== homeTeamId && pred(e)).sort(sort)
+    const home = events.goals.filter((e) => e.teamId === homeTeamId && pred(e)).sort(sort)
+    const away = events.goals.filter((e) => e.teamId !== homeTeamId && pred(e)).sort(sort)
 
     return { home, away }
   }
@@ -89,14 +89,14 @@ const RedCard = () => (
   <Square width={14} height={14} style={{ fill: '#e53935', color: 'transparent' }} />
 )
 
-const isPenalty = (e: MatchEvent) => (e.detail || '').toLowerCase().includes('pen')
+const isPenalty = (e: MatchEvent) => (e.comment || '').toLowerCase().includes('pen')
 
 function groupGoalsByPlayer(goals: MatchEvent[]): string[] {
   const map = new Map<string, MatchEvent[]>()
-  const filteredGoals = goals.filter((g) => g.time.elapsed < 120)
+  const filteredGoals = goals.filter((g) => Number(g.minute) < 120)
 
   for (const g of filteredGoals) {
-    const key = String(g.player?.id ?? g.player?.name ?? Math.random())
+    const key = String(g.name ?? Math.random())
     const arr = map.get(key)
     if (arr) arr.push(g)
     else map.set(key, [g])
@@ -105,13 +105,13 @@ function groupGoalsByPlayer(goals: MatchEvent[]): string[] {
   const lines: string[] = []
 
   for (const [, arr] of map) {
-    arr.sort((a, b) => a.time.elapsed - b.time.elapsed || (a.time.extra ?? 0) - (b.time.extra ?? 0))
+    arr.sort((a, b) => Number(a.minute) - Number(b.minute) || (Number(a.extra_min ?? 0) - Number(b.extra_min ?? 0)))
 
-    const name = arr[0].player?.name ?? ''
+    const name = arr[0].name ?? ''
     let firstPenaltyUsed = false
 
     const minutes = arr.map((e) => {
-      const m = formatMinute(e.time)
+      const m = formatMinute({ elapsed: Number(e.minute), extra: Number(e.extra_min ?? 0) })
       if (isPenalty(e) && !firstPenaltyUsed) {
         firstPenaltyUsed = true
         return `${m} (P)`
@@ -125,4 +125,4 @@ function groupGoalsByPlayer(goals: MatchEvent[]): string[] {
   return lines
 }
 
-const fmtRed = (e: MatchEvent) => `${e.player?.name ?? '—'} ${formatMinute(e.time)}`.trim()
+const fmtRed = (e: MatchEvent) => `${e.name ?? '—'} ${formatMinute({ elapsed: Number(e.minute), extra: Number(e.extra_min ?? 0) })}`.trim()

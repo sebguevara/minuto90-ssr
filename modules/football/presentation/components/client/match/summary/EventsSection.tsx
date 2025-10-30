@@ -1,25 +1,24 @@
 'use client'
 
-import { MatchEvent, MatchPreviewStatus } from '@football/domain/entities/Match'
+import { MatchEvent, MatchTeam, TeamEvents } from '@/modules/football/domain/models/commentary'
 import { ArrowDown, ArrowUp, Square } from 'lucide-react'
 import React from 'react'
-import { Team } from '@football/domain/entities/Team'
 import Image from 'next/image'
-import { formatMinute, groupByPeriod } from '../../utils/summary'
+import { formatMinute, groupByPeriod } from '@/modules/football/presentation/utils/summary'
 
 type Props = {
-  events: MatchEvent[]
-  homeTeamId: number
+  events: TeamEvents
+  teams: MatchTeam[]
   order?: 'desc' | 'asc'
-  status: MatchPreviewStatus
+  status: string
 }
 
-export const EventsSection: React.FC<Props> = ({ events, homeTeamId, order = 'desc', status }) => {
-  const periods = groupByPeriod(events)
+export const EventsSection: React.FC<Props> = ({ events, teams, order = 'desc', status }) => {
+  const periods = groupByPeriod(events.goals.filter((e) => e.comment !== null))
   const periodsOrdered = order === 'desc' ? [...periods].reverse() : periods
 
   const sortByMinuteDesc = (a: MatchEvent, b: MatchEvent) =>
-    (b.time?.elapsed ?? 0) + (b.time?.extra ?? 0) - ((a.time?.elapsed ?? 0) + (a.time?.extra ?? 0))
+    Number(b.minute) - Number(a.minute) || (Number(b.extra_min ?? 0) - Number(a.extra_min ?? 0))
 
   const hasTwoHalves = periods.length >= 2
 
@@ -35,9 +34,9 @@ export const EventsSection: React.FC<Props> = ({ events, homeTeamId, order = 'de
             <PeriodHeader label={label} />
             <div>
               {[...events].sort(sortByMinuteDesc).map((ev, i) => {
-                const isHome = ev.team.id === homeTeamId
-                const key = `${ev.time.elapsed}-${ev.time.extra ?? 0}-${i}`
-                return <TimelineRow key={key} event={ev} isHome={isHome} />
+                const isHome = ev.teamId === teams[0].id
+                const key = `${ev.minute}-${ev.extra_min ?? 0}-${i}`
+                return <TimelineRow key={key} event={ev} isHome={isHome} teams={teams} />
               })}
             </div>
             {order === 'desc' && hasTwoHalves && idx === 0 && (
@@ -62,7 +61,7 @@ const DividerMarker = ({
   status,
 }: {
   kind: 'kickoff' | 'halftime' | 'fulltime'
-  status: MatchPreviewStatus
+  status: string
 }) => {
   const map = {
     kickoff: { text: 'Inicio del partido' },
@@ -83,61 +82,55 @@ const DividerMarker = ({
         }`}>
         <div>
           <span className="text-xs text-muted-foreground">{text}</span>
-          {status?.extra && text === 'Final del partido' && (
-            <span className="text-xs text-muted-foreground">
-              - {status?.elapsed}&apos; +{status?.extra}&apos;
-            </span>
-          )}
         </div>
       </div>
     </div>
   )
 }
 
-const TimelineRow = ({ event, isHome }: { event: MatchEvent; isHome: boolean }) => {
-  const minute = formatMinute(event.time)
+const TimelineRow = ({ event, isHome, teams }: { event: MatchEvent; isHome: boolean; teams: MatchTeam[] }) => {
+  const minute = formatMinute({ elapsed: Number(event.minute), extra: Number(event.extra_min ?? 0) })
   return (
     <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-2 py-3 px-3 border-b border-gray-300 dark:border-gray-700">
-      <div className="text-right">{isHome && <EventBubble event={event} align="right" />}</div>
+      <div className="text-right">{isHome && <EventBubble event={event} align="right" team={teams[0]} />}</div>
       <div className="text-xs opacity-60">{minute}</div>
-      <div className="text-left">{!isHome && <EventBubble event={event} align="left" />}</div>
+      <div className="text-left">{!isHome && <EventBubble event={event} align="left" team={teams[1]} />}</div>
     </div>
   )
 }
 
-const EventBubble = ({ event, align }: { event: MatchEvent; align: 'left' | 'right' }) => {
-  const { player, assist, type, detail, team } = event
+const EventBubble = ({ event, align, team }: { event: MatchEvent; align: 'left' | 'right'; team: MatchTeam }) => {
+  const { name, assist_name, comment, teamId } = event
   return (
     <div
       className={`flex w-full justify-between items-center gap-2 ${
         align === 'right' ? 'flex-row-reverse text-right' : 'flex-row text-left'
       }`}>
-      <TeamLogo team={team} />
+      <TeamLogo teamId={teamId} logo={team.logo!} />
       <div className="flex flex-col w-full">
         <span
           className={`text-xs font-medium flex gap-1 w-full ${
             align === 'right' ? 'justify-start' : 'justify-end'
           }`}>
-          {renderTitle(type, detail)} {iconFor(type, detail)}
+          {renderTitle(comment)} {iconFor(comment)}
         </span>
         <span
           className={`text-xs flex flex-col w-full text-start font-medium ${
             align === 'right' ? 'items-start' : 'items-end'
           }`}>
-          {renderLine(type, detail, player?.name, assist?.name)}
+          {renderLine(comment, name, assist_name)}
         </span>
       </div>
     </div>
   )
 }
 
-const TeamLogo = ({ team }: { team: Team }) => {
-  if (!team?.logo) return null
+const TeamLogo = ({ teamId, logo }: { teamId: string; logo: string | null }) => {
   return (
     <div className="relative w-4 h-4">
       <Image
-        src={team.logo}
-        alt={team.name}
+        src={logo ?? ''}
+        alt={teamId}
         className="rounded-sm object-contain"
         fill
         sizes="100%"
@@ -146,77 +139,29 @@ const TeamLogo = ({ team }: { team: Team }) => {
   )
 }
 
-function renderTitle(type: string, detail?: string) {
-  const d = (detail || '').toLowerCase()
-  if (type === 'Goal') {
-    if (detail === 'Missed Penalty') return '¡Penal Fallado!'
-    if (d.includes('pen')) return '¡GOL (penal)!'
-    if (d.includes('own')) return '¡Autogol!'
-    return '¡GOL!'
-  }
-  if (type === 'Card') {
-    if (d.includes('yellow')) return 'Tarjeta Amarilla'
-    if (d.includes('red')) return 'Tarjeta Roja'
-    return 'Tarjeta'
-  }
-  if (type === 'subst' || type.toLowerCase() === 'substitution') return 'Cambio'
-  if (type.toLowerCase() === 'var') {
-    switch (detail) {
-      case 'Goal cancelled':
-        return 'VAR: ¡Gol Anulado!'
-      case 'Goal confirmed':
-        return 'VAR: ¡Gol Confirmado!'
-      case 'Penalty confirmed':
-        return 'VAR: ¡Penal Confirmado!'
-      case 'Penalty cancelled':
-        return 'VAR: ¡Penal Anulado!'
-      case 'Card upgraded':
-        return 'VAR: Tarjeta Mejorada'
-      case 'Card downgraded':
-        return 'VAR: Tarjeta Disminuida'
-      default:
-        return 'VAR'
-    }
-  }
-  return type
+function renderTitle(comment: string | null) {
+  if (comment === 'Goal') return '¡GOL!'
+  if (comment === 'Card') return 'Tarjeta'
+  if (comment === 'Substitution') return 'Cambio'
+  if (comment === 'VAR') return 'VAR'
+  return comment
 }
 
-function renderLine(type: string, detail?: string, player?: string | null, assist?: string | null) {
-  if (type === 'Goal' && detail === 'Missed Penalty') return <b>{player}</b>
-  if (type === 'subst' || type.toLowerCase() === 'substitution') {
-    return (
-      <>
-        <b>{player}</b> por {assist ?? '—'}
-      </>
-    )
-  }
-  if (type === 'Goal') {
-    return (
-      <>
-        <b>{player}</b>
-        {assist ? <span className="opacity-70 text-[11px]"> (asist. {assist})</span> : null}
-      </>
-    )
-  }
+function renderLine(comment: string | null, player?: string | null, assist?: string | null) {
+  if (comment === 'Goal') return <b>{player}</b>
+  if (comment === 'Card') return <b>{player}</b>
+  if (comment === 'Substitution') return <b>{player}</b>
+  if (comment === 'VAR') return <b>{player}</b>
   return <b>{player}</b>
 }
 
-function iconFor(type: string, detail?: string) {
-  if (type === 'Goal') return <span>⚽</span>
-  if (type === 'Card') {
-    const d = (detail || '').toLowerCase()
-    if (d.includes('yellow')) return <CardSquare color="#fdd835" />
-    if (d.includes('red')) return <CardSquare color="#e53935" />
-    return <CardSquare color="#ccc" />
-  }
-  if (type === 'subst' || type.toLowerCase() === 'substitution') {
-    return (
-      <span className="inline-flex items-center gap-0.5">
-        <ArrowUp className="w-3 h-3 text-green-500" />
-        <ArrowDown className="w-3 h-3 text-red-500" />
-      </span>
-    )
-  }
+function iconFor(comment: string | null) {
+  if (comment === 'Goal') return <span>⚽</span>
+  if (comment === 'Card') return <CardSquare color="#ccc" />
+  if (comment === 'Substitution') return <span className="inline-flex items-center gap-0.5">
+    <ArrowUp className="w-3 h-3 text-green-500" />
+    <ArrowDown className="w-3 h-3 text-red-500" />
+  </span>
   return null
 }
 

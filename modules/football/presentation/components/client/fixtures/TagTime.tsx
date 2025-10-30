@@ -1,6 +1,6 @@
-import { Match } from '@/modules/football/domain/models/fixture'
+import { MatchInfo } from '@/modules/football/domain/models/commentary';
 interface Props {
-  match: Match
+  match: MatchInfo
 }
 
 export const TagTime = ({ match }: Props) => {

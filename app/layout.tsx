@@ -77,14 +77,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body suppressHydrationWarning className={`${roboto.variable} antialiased`}>
         <GlobalProvider>
+          <Suspense fallback={null}>
+            <MobileHeader title="Minuto 90" />
+            <DesktopHeader title="Minuto 90" />
+          </Suspense>
           <div className="flex min-h-screen flex-col items-center">
-            <div className="w-full max-w-7xl px-2 md:px-4">
-              <Suspense fallback={<div className="h-14 lg:h-16" />}>
-                <MobileHeader title="Minuto 90" />
-              </Suspense>
-              <Suspense fallback={<div className="h-14 lg:h-16" />}>
-                <DesktopHeader title="Minuto 90" />
-              </Suspense>
+            <div className="w-full max-w-7xl px-2 md:px-4 mt-14 lg:mt-0">
               <main className="flex-grow pt-2 md:pt-4 pb-8">
                 <ErrorBoundary>{children}</ErrorBoundary>
               </main>

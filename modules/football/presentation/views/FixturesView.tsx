@@ -5,13 +5,14 @@ import { useSearchParams } from 'next/navigation'
 import { LeagueFixtures } from '@/modules/football/domain/models/fixture'
 import { useFixtures } from '@/modules/football/presentation/hooks/use-fixtures'
 import { ErrorMessage } from '@/modules/core/components/errors/ErrorMessage'
+import { MatchListSkeleton } from '@/modules/core/components/loadings/MatchListSkeleton'
 import { PreviewMatches } from '../components/client/fixtures/PreviewMatches'
 import { useFavoriteStore } from '@/modules/core/store/useFavoriteStore'
 import { useSearchStore } from '@/modules/core/store/useSearchStore'
 import { strip, getBrowserTimezone, getTodayDate, formatDate, formatTime } from '@/lib/utils'
-import { PRESELECTED_LEAGUES } from '@/lib/consts/football/leagues'
+import { PRESELECTED_LEAGUES, leaguePriority } from '@/lib/consts/football/leagues'
 import { Sidebar } from '../components/client/sidebar/Sidebar'
-import { FixturesContentSkeleton } from '../components/skeletons/FixturesSkeleton'
+import { FixturesSkeleton } from '../components/skeletons/FixturesSkeleton'
 
 interface FixturesViewProps {
   initialFixtures: LeagueFixtures[]
@@ -109,7 +110,6 @@ export function FixturesView({ initialFixtures, dateParam: initialDateParam }: F
         }))
         .filter((league) => league.matches.length > 0)
     } else if (liveOnly) {
-      // Filtrar localmente solo los partidos en vivo
       leagues = leagues
         .map((league) => ({
           ...league,
@@ -152,30 +152,26 @@ export function FixturesView({ initialFixtures, dateParam: initialDateParam }: F
     }
 
     leagues.sort((a, b) => {
-      const aIsPreselected = PRESELECTED_LEAGUES.includes(a.id)
-      const bIsPreselected = PRESELECTED_LEAGUES.includes(b.id)
-      if (aIsPreselected && !bIsPreselected) return -1
-      if (!aIsPreselected && bIsPreselected) return 1
-      return (a.country?.name || 'zzz').localeCompare(b.country?.name || 'zzz')
-    })
+      const leagueAId = Number(a.id);
+      const leagueBId = Number(b.id);
+      
+      const priorityA = leaguePriority[leagueAId] ?? Infinity;
+      const priorityB = leaguePriority[leagueBId] ?? Infinity;
 
-    return leagues
+      return priorityA - priorityB;
+    });
+
+    return leagues;
   }, [processedFixtures, liveOnly, scheduledOnly, finishedOnly, favoritesOnly, favoriteMatches, query])
 
   const renderContent = () => {
-    // Mostrar skeleton cuando está cargando datos nuevos (cambio de fecha)
-    if (isFetching && date !== initialDateParam) {
-      return <FixturesContentSkeleton />
-    }
-
-    if (filteredLeagues.length === 0) {
-      return (
-        <div className="flex flex-col gap-2 w-full items-center py-4 mt-14 lg:mt-0">
-          <p className="text-sm lg:text-base text-muted-foreground">
-            No hay partidos disponibles para los filtros seleccionados
-          </p>
-        </div>
-      )
+    const isLoadingNewData = date !== initialDateParam && isFetching
+    const hasNoFixtures = !fixtures
+    const isLoadingInitialData = isLoading && hasNoFixtures
+    const showSkeleton = isLoadingInitialData || isLoadingNewData
+    
+    if (showSkeleton) {
+      return <FixturesSkeleton />
     }
 
     return (
@@ -183,7 +179,7 @@ export function FixturesView({ initialFixtures, dateParam: initialDateParam }: F
         filteredLeagues={filteredLeagues}
         isExpanded={isExpanded}
         setIsExpanded={setIsExpanded}
-        title={favoritesOnly ? 'Tus Favoritos' : 'Partidos'}
+        title={favoritesOnly ? 'Tus Favoritos' : 'Resultados'}
         date={date}
         setDate={setDate}
         liveOnly={liveOnly}

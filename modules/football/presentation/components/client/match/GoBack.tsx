@@ -3,7 +3,7 @@
 import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { cn } from '@/shared/lib/utils'
+import { cn } from '@/lib/utils'
 
 interface Props {
   className?: string

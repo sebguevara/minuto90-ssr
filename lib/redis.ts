@@ -8,7 +8,6 @@ export function getRedisClient(): Redis {
 
   try {
     if (env.REDIS_URL) {
-      // Usar REDIS_URL (producción o desarrollo)
       redis = new Redis(env.REDIS_URL, {
         maxRetriesPerRequest: 3,
         retryStrategy: (times) => {

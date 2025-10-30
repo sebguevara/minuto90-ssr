@@ -89,7 +89,7 @@ export const Filters = ({
 
   return (
     <div className="flex flex-col md:flex-row gap-2 w-full lg:w-max justify-between">
-      <div className="flex items-center justify-between gap-2 order-1 md:order-2">
+      <div className="flex items-center justify-between gap-2 order-1 md:order-2 bg-card">
         <Select value={date} onValueChange={handleDateChange} disabled={favoritesOnly}>
           <SelectTrigger className="w-full md:w-[170px]">
             <CalendarIcon size={14} />

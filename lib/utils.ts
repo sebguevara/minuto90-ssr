@@ -152,6 +152,46 @@ export const generateSlug = (text: string): string => {
     .replace(/-+$/, '')
 }
 
+/**
+ * Genera la URL SEO-friendly para la página de un partido.
+ * Los IDs se integran en el path de forma coherente: ${leagueSlug}-${leagueId}/${teamsSlug}-${matchId}
+ * 
+ * @example
+ * generateMatchUrl({
+ *   homeTeam: 'Chelsea',
+ *   awayTeam: 'Ajax',
+ *   leagueName: 'Champions League',
+ *   matchId: 3695638,
+ *   leagueId: 1167
+ * })
+ * // Retorna: "/football/partido/champions-league-1167/chelsea-vs-ajax-3695638"
+ */
+export const generateMatchUrl = (params: {
+  homeTeam: string
+  awayTeam: string
+  leagueName?: string
+  matchId?: string | number
+  leagueId?: string | number
+}): string => {
+  const { homeTeam, awayTeam, leagueName, matchId, leagueId } = params
+  const homeSlug = generateSlug(homeTeam)
+  const awaySlug = generateSlug(awayTeam)
+  const teamsSlug = `${homeSlug}-vs-${awaySlug}`
+
+  if (leagueName && leagueId && matchId) {
+    const leagueSlug = generateSlug(leagueName)
+    return `/football/partido/${leagueSlug}-${leagueId}/${teamsSlug}-${matchId}`
+  }
+
+  if (leagueName) {
+    const leagueSlug = generateSlug(leagueName)
+    const url = `/football/partido/${leagueSlug}`
+    return matchId ? `${url}/${teamsSlug}-${matchId}` : `${url}/${teamsSlug}`
+  }
+
+  return matchId ? `/football/partido/${teamsSlug}-${matchId}` : `/football/partido/${teamsSlug}`
+}
+
 export const getBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_BASE_URL) {
     return process.env.NEXT_PUBLIC_BASE_URL

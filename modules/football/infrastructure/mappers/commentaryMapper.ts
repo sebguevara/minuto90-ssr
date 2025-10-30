@@ -1,152 +1,232 @@
-import { MatchDetails, MatchStats, Lineup } from '@/modules/football/domain/models/commentary'
-import { MatchEvent } from '@/modules/football/domain/models/common'
-import {
-  GoalServeCommentaryResponse,
-  GoalServeStats,
-  GoalServeTeamLineup,
-  GoalServeGoal,
-  GoalServeSubstitution,
-  GoalServeCard,
-  GoalServeCommentaryPlayer,
-} from '@/modules/football/domain/types/commentaryResponse'
+// modules/football/infrastructure/mappers/commentaryMapper.ts
 
-const toStats = (stats: GoalServeStats | undefined): MatchStats => {
-  if (!stats) {
-    return {
-      shots_total: 0,
-      shots_on_goal: 0,
-      possession: 0,
-      corners: 0,
-      offsides: 0,
-      fouls: 0,
-      saves: 0,
-    }
-  }
-  return {
-    shots_total: parseInt(stats.shots_total?.['@total'] || '0', 10),
-    shots_on_goal: parseInt(stats.shots_on_goal?.['@total'] || '0', 10),
-    possession: parseInt(stats.possessiontime?.['@total'] || '0', 10),
-    corners: parseInt(stats.corners?.['@total'] || '0', 10),
-    offsides: parseInt(stats.offsides?.['@total'] || '0', 10),
-    fouls: parseInt(stats.fouls?.['@total'] || '0', 10),
-    saves: parseInt(stats.saves?.['@total'] || '0', 10),
-  }
+import {
+  CommentaryResponse,
+  PlayerEventAttr,
+  PlayerStatsAttr,
+  StatsAttr,
+  SubstitutionAttr,
+} from '@/modules/football/domain/types/commentaryResponse'
+import { MatchDetails, MatchEvent } from '@/modules/football/domain/models/commentary'
+
+const ensureArray = <T>(item: T | T[] | undefined): T[] => {
+  if (item === undefined) return []
+  return Array.isArray(item) ? item : [item]
 }
 
-const toLineup = (lineup: GoalServeTeamLineup | undefined): Lineup | undefined => {
-  if (!lineup) return undefined
-
-  const mapPlayer = (p: GoalServeCommentaryPlayer) => ({
+const parsePlayerEvents = (
+  players: ReturnType<typeof ensureArray<PlayerEventAttr>>,
+  teamId: string
+): MatchEvent[] =>
+  players.map((p) => ({
+    teamId,
     id: p['@id'],
     name: p['@name'],
-    number: parseInt(p['@number'] || '0', 10),
-    position: p['@pos'] || '',
-  })
-
-  return {
-    starting: lineup.player.map(mapPlayer),
-    substitutes: lineup.substitutes.player.map(mapPlayer),
-    coach: { id: lineup.coach['@id'], name: lineup.coach['@name'] },
-    formation: lineup.formation?.['@value'],
-  }
-}
+    minute: p['@minute'],
+    extra_min: p['@extra_min'] || null,
+    owngoal: p['@owngoal'] === 'True',
+    penalty: p['@penalty'] === 'True',
+    assist_name: p['@assist_name'] || null,
+    assist_id: p['@assist_id'] || null,
+    comment: p['@comment'] || null,
+  }))
 
 export const commentaryMapper = {
-  toDomain: (response: GoalServeCommentaryResponse): MatchDetails | null => {
-    const matchData = response.commentaries?.match
-    if (!matchData) return null
+  toDomain(response: CommentaryResponse): MatchDetails | null {
+    try {
+      const tournament = response.commentaries.tournament
+      const matchData = tournament.match
+      if (!matchData) return null
 
-    const goalEvents: MatchEvent[] = (
-      matchData.goals?.goal
-        ? Array.isArray(matchData.goals.goal)
-          ? matchData.goals.goal
-          : [matchData.goals.goal]
-        : []
-    ).map(
-      (g: GoalServeGoal): MatchEvent => ({
-        type: 'goal',
-        minute: parseInt(g['@minute'], 10),
-        team: g['@team'] as 'localteam' | 'visitorteam',
-        player: { id: g['@playerid'], name: g['@player'] },
-        assist: { id: g['@assistid'] || '', name: g['@assist'] || '' },
-        result: g['@score'],
-      })
-    )
+      console.log(matchData)
 
-    const cardEvents: MatchEvent[] = (
-      matchData.cards?.card
-        ? Array.isArray(matchData.cards.card)
-          ? matchData.cards.card
-          : [matchData.cards.card]
-        : []
-    ).map(
-      (c: GoalServeCard): MatchEvent => ({
-        type: c['@type'] as 'yellowcard' | 'redcard',
-        minute: parseInt(c['@minute'], 10),
-        team: c['@team'] as 'localteam' | 'visitorteam',
-        player: { id: c['@playerid'], name: c['@player'] },
-      })
-    )
+      const { localteam, visitorteam, summary, teams, player_stats, team_colors } = matchData
+      const localId = localteam['@id']
+      const visitorId = visitorteam['@id']
 
-    const localSubs = (
-      matchData.substitutions?.localteam?.substitution
-        ? Array.isArray(matchData.substitutions.localteam.substitution)
-          ? matchData.substitutions.localteam.substitution
-          : [matchData.substitutions.localteam.substitution]
-        : []
-    ).map(
-      (s: GoalServeSubstitution): MatchEvent => ({
-        type: 'substitution',
-        minute: parseInt(s['@minute'], 10),
-        team: 'localteam',
-        playerIn: { id: s['@player_in_id'], name: s['@player_in_name'] },
-        playerOut: { id: s['@player_out_id'], name: s['@player_out_name'] },
-      })
-    )
-
-    const visitorSubs = (
-      matchData.substitutions?.visitorteam?.substitution
-        ? Array.isArray(matchData.substitutions.visitorteam.substitution)
-          ? matchData.substitutions.visitorteam.substitution
-          : [matchData.substitutions.visitorteam.substitution]
-        : []
-    ).map(
-      (s: GoalServeSubstitution): MatchEvent => ({
-        type: 'substitution',
-        minute: parseInt(s['@minute'], 10),
-        team: 'visitorteam',
-        playerIn: { id: s['@player_in_id'], name: s['@player_in_name'] },
-        playerOut: { id: s['@player_out_id'], name: s['@player_out_name'] },
-      })
-    )
-
-    const allEvents = [...goalEvents, ...cardEvents, ...localSubs, ...visitorSubs].sort(
-      (a, b) => a.minute - b.minute
-    )
-
-    return {
-      id: matchData['@id'],
-      localTeam: { id: matchData['@localteam_id'], name: matchData['@localteam'] },
-      visitorTeam: { id: matchData['@visitorteam_id'], name: matchData['@visitorteam'] },
-      stats: {
-        localTeam: toStats(matchData.stats?.localteam),
-        visitorTeam: toStats(matchData.stats?.visitorteam),
-      },
-      lineups: {
-        localTeam: toLineup(matchData.lineups?.localteam) || {
-          starting: [],
-          substitutes: [],
-          coach: { id: '', name: '' },
-          formation: '',
+      return {
+        tournament: { id: tournament['@id'], name: tournament['@name'] },
+        match: {
+          id: matchData['@id'],
+          status: matchData['@status'],
+          date: matchData['@date'],
+          time: matchData['@time'],
+          timer: matchData['@timer'] || null,
+          venue: matchData.matchinfo?.stadium?.['@name'] || null,
+          referee: matchData.matchinfo?.referee?.['@name'] || null,
+          addedTimeP1: matchData.matchinfo?.time?.['@addedTime_period1'] || null,
+          addedTimeP2: matchData.matchinfo?.time?.['@addedTime_period2'] || null,
+          localTeam: {
+            id: localId,
+            name: localteam['@name'],
+            goals: parseInt(localteam['@goals'], 10),
+            ht_score: localteam['@ht_score'] || null,
+            ft_score: localteam['@ft_score'] || null,
+            logo: '',
+          },
+          visitorTeam: {
+            id: visitorId,
+            name: visitorteam['@name'],
+            goals: parseInt(visitorteam['@goals'], 10),
+            ht_score: visitorteam['@ht_score'] || null,
+            ft_score: visitorteam['@ft_score'] || null,
+            logo: '',
+          },
         },
-        visitorTeam: toLineup(matchData.lineups?.visitorteam) || {
-          starting: [],
-          substitutes: [],
-          coach: { id: '', name: '' },
-          formation: '',
+        events: {
+          goals: [
+            ...parsePlayerEvents(ensureArray(summary?.localteam.goals?.player), localId),
+            ...parsePlayerEvents(ensureArray(summary?.visitorteam.goals?.player), visitorId),
+          ],
+          yellowCards: [
+            ...parsePlayerEvents(ensureArray(summary?.localteam.yellowcards?.player), localId),
+            ...parsePlayerEvents(ensureArray(summary?.visitorteam.yellowcards?.player), visitorId),
+          ],
+          redCards: [
+            ...parsePlayerEvents(ensureArray(summary?.localteam.redcards?.player), localId),
+            ...parsePlayerEvents(ensureArray(summary?.visitorteam.redcards?.player), visitorId),
+          ],
         },
-      },
-      events: allEvents,
+        substitutions: {
+          localteam: ensureArray(matchData.substitutions?.localteam.substitution).map(
+            (s: SubstitutionAttr) => ({
+              off: s['@off'],
+              on: s['@on'],
+              minute: s['@minute'],
+              on_id: s['@on_id'],
+              off_id: s['@off_id'],
+              injury: s['@injury'] === 'True',
+            })
+          ),
+          visitorteam: ensureArray(matchData.substitutions?.visitorteam.substitution).map(
+            (s: SubstitutionAttr) => ({
+              off: s['@off'],
+              on: s['@on'],
+              minute: s['@minute'],
+              on_id: s['@on_id'],
+              off_id: s['@off_id'],
+              injury: s['@injury'] === 'True',
+            })
+          ),
+        },
+        stats: matchData.stats
+          ? {
+              localteam: Object.entries(matchData.stats.localteam).map(
+                ([key, value]: [string, StatsAttr]) => ({
+                  name: key,
+                  total: value['@total'],
+                  ongoal: value['@ongoal'],
+                  offgoal: value['@offgoal'],
+                  blocked: value['@blocked'],
+                  insidebox: value['@insidebox'],
+                  outsidebox: value['@outsidebox'],
+                  accurate: value['@accurate'],
+                  pct: value['@pct'],
+                  total_h1: value['@total_h1'],
+                  ongoal_h1: value['@ongoal_h1'],
+                  total_h2: value['@total_h2'],
+                  ongoal_h2: value['@ongoal_h2'],
+                })
+              ),
+              visitorteam: Object.entries(matchData.stats.visitorteam).map(
+                ([key, value]: [string, StatsAttr]) => ({
+                  name: key,
+                  total: value['@total'],
+                  ongoal: value['@ongoal'],
+                  offgoal: value['@offgoal'],
+                  blocked: value['@blocked'],
+                  insidebox: value['@insidebox'],
+                  outsidebox: value['@outsidebox'],
+                  accurate: value['@accurate'],
+                  pct: value['@pct'],
+                  total_h1: value['@total_h1'],
+                  ongoal_h1: value['@ongoal_h1'],
+                  total_h2: value['@total_h2'],
+                  ongoal_h2: value['@ongoal_h2'],
+                })
+              ),
+            }
+          : null,
+        lineups: teams
+          ? {
+              localTeam: {
+                formation: teams.localteam['@formation'],
+                starting: ensureArray(teams.localteam.player).map((p) => ({
+                  id: p['@id'],
+                  name: p['@name'],
+                  number: p['@number'],
+                  pos: p['@pos'],
+                  formation_pos: p['@formation_pos'],
+                })),
+                substitutes: ensureArray(matchData.substitutes?.localteam.player).map((p) => ({
+                  id: p['@id'],
+                  name: p['@name'],
+                  number: p['@number'],
+                  pos: p['@pos'],
+                })),
+              },
+              visitorTeam: {
+                formation: teams.visitorteam['@formation'],
+                starting: ensureArray(teams.visitorteam.player).map((p) => ({
+                  id: p['@id'],
+                  name: p['@name'],
+                  number: p['@number'],
+                  pos: p['@pos'],
+                  formation_pos: p['@formation_pos'],
+                })),
+                substitutes: ensureArray(matchData.substitutes?.visitorteam.player).map((p) => ({
+                  id: p['@id'],
+                  name: p['@name'],
+                  number: p['@number'],
+                  pos: p['@pos'],
+                })),
+              },
+            }
+          : null,
+        playerStats: player_stats
+          ? {
+              localteam: ensureArray(player_stats.localteam.player).map((p: PlayerStatsAttr) => ({
+                ...p,
+                isCaptain: p['@isCaptain'] === 'True',
+                isSubst: p['@isSubst'] === 'True',
+              })),
+              visitorteam: ensureArray(player_stats.visitorteam.player).map(
+                (p: PlayerStatsAttr) => ({
+                  ...p,
+                  isCaptain: p['@isCaptain'] === 'True',
+                  isSubst: p['@isSubst'] === 'True',
+                })
+              ),
+            }
+          : null,
+        teamColors: team_colors
+          ? {
+              localteam: {
+                player: Object.fromEntries(
+                  Object.entries(team_colors.localteam.player).map(([k, v]) => [k, v['@color']])
+                ),
+                goalkeeper: Object.fromEntries(
+                  Object.entries(team_colors.localteam.goalkeeper).map(([k, v]) => [k, v['@color']])
+                ),
+              },
+              visitorteam: {
+                player: Object.fromEntries(
+                  Object.entries(team_colors.visitorteam.player).map(([k, v]) => [k, v['@color']])
+                ),
+                goalkeeper: Object.fromEntries(
+                  Object.entries(team_colors.visitorteam.goalkeeper).map(([k, v]) => [
+                    k,
+                    v['@color'],
+                  ])
+                ),
+              },
+            }
+          : null,
+        coaches: matchData.coaches || null,
+      }
+    } catch (error) {
+      console.error('Error fatal en commentaryMapper:', error)
+      return null
     }
   },
 }

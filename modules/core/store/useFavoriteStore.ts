@@ -1,3 +1,4 @@
+import { MatchInfo } from '@/modules/football/domain/models/commentary'
 import { Match } from '@/modules/football/domain/models/fixture'
 import { League } from '@/modules/football/domain/models/league'
 import { TeamProfile } from '@/modules/football/domain/models/team'
@@ -10,10 +11,10 @@ export type FavoriteTeam = Pick<TeamProfile, 'id' | 'name' | 'logo'> & {
 }
 
 interface FavoriteState {
-  favoriteMatches: Record<number, Match>
+  favoriteMatches: Record<number, MatchInfo>
   favoriteLeagues: Record<number, League>
   favoriteTeams: Record<number, FavoriteTeam>
-  toggleFavoriteMatch: (match: Match) => void
+  toggleFavoriteMatch: (match: MatchInfo) => void
   isMatchFavorite: (matchId: number) => boolean
   toggleFavoriteLeague: (league: League) => void
   isLeagueFavorite: (leagueId: number) => boolean

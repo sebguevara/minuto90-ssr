@@ -4,7 +4,8 @@ const BASE_URL = env.PRIVATE_GOALSERVE_BASE_URL
 const API_KEY = env.PRIVATE_GOAL_SERVE_API_KEY
 
 export async function fetchFromGoalServe<T>(path: string): Promise<T> {
-  const url = `${BASE_URL}/${API_KEY}/${path}?json=1`
+  const jsonParam = path.includes('?') ? '&json=1' : '?json=1'
+  const url = `${BASE_URL}/${API_KEY}/${path}${jsonParam}`
   console.log('url', url)
 
   try {

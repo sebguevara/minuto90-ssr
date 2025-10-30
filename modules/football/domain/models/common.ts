@@ -38,5 +38,5 @@ export interface TeamInfo {
 export interface PlayerInfo {
   id: string
   name: string
-  number?: number
+  number?: string
 }

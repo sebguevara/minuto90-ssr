@@ -1,24 +1,16 @@
 'use client'
 
-import { MatchEvent } from '@/modules/football/domain/entities/Match'
-import { cn } from '@/shared/lib/utils'
-
+import { cn } from '@/lib/utils'
 interface Props {
   homeTeamScore?: number
-  homeTeamPenalty?: number
   awayTeamScore?: number
-  awayTeamPenalty?: number
-  homeTeamRedCards?: MatchEvent[]
-  awayTeamRedCards?: MatchEvent[]
+  penalties?: number
 }
 
 export const MatchHeaderScore = ({
   homeTeamScore,
-  homeTeamPenalty,
   awayTeamScore,
-  awayTeamPenalty,
-  homeTeamRedCards,
-  awayTeamRedCards,
+  penalties,
 }: Props) => {
   return (
     <div
@@ -27,23 +19,23 @@ export const MatchHeaderScore = ({
       )}>
       <div className="flex space-x-2">
         <div className="relative flex items-center gap-2">
-          <p className="text-3xl font-semibold">{homeTeamScore ?? '-'}</p>
-          {homeTeamRedCards && homeTeamRedCards.length > 0 && (
-            <div className="absolute w-1.5 h-2.5 rounded-xs top-0 left-[-10px]" />
+          <p className="text-3xl font-semibold">{homeTeamScore ?? 0}</p>
+          {penalties && penalties > 0 && (
+            <div className="absolute w-1.5 h-2.5 rounded-xs top-0 left-[-10px]" style={{ backgroundColor: 'red' }} />
           )}
         </div>
         <p className="text-3xl font-semibold">:</p>
         <div className="relative">
-          <p className="text-3xl font-semibold">{awayTeamScore ?? '-'}</p>
-          {awayTeamRedCards && awayTeamRedCards.length > 0 && (
-            <div className="absolute w-1.5 h-2.5 rounded-xs top-0 right-[-10px]" />
+          <p className="text-3xl font-semibold">{awayTeamScore ?? 0}</p>
+          {penalties && penalties > 0 && (
+            <div className="absolute w-1.5 h-2.5 rounded-xs top-0 right-[-10px]" style={{ backgroundColor: 'red' }} />
           )}
         </div>
       </div>
 
-      {homeTeamPenalty != null && awayTeamPenalty != null && (
+      {penalties && penalties > 0 && (
         <div className="absolute left-1/2 -translate-x-1/2 bottom-[-10px] lg:bottom-[-8px] inline-flex items-center text-[9px] lg:text-xs font-semibold whitespace-nowrap">
-          ({homeTeamPenalty} - {awayTeamPenalty})
+          ({penalties} - {penalties})
         </div>
       )}
     </div>

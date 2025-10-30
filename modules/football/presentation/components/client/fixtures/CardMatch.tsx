@@ -1,5 +1,4 @@
-// sebguevara/minuto90-ssr/minuto90-ssr-ae3f061568e172e16c8c3f11c52c20f7774632d1/modules/football/presentation/components/client/fixtures/CardMatch.tsx
-import { abbreviateTeamName, getStatusConfig, cn, generateSlug } from '@/lib/utils'
+import { abbreviateTeamName, getStatusConfig, cn, generateMatchUrl } from '@/lib/utils'
 import { Heart } from 'lucide-react'
 import { TagTime } from './TagTime'
 import { MatchScore } from './MatchScore'
@@ -11,6 +10,7 @@ import { ImageWithRetry } from '@/modules/core/components/Image/ImageWithRetry'
 import { Match } from '@/modules/football/domain/models/fixture'
 import Link from 'next/link'  
 import { ViewTransition } from 'react'
+import { MatchInfo } from '@/modules/football/domain/models/commentary'
 interface Props {
   fixture: Match
   showOdds?: boolean
@@ -19,6 +19,7 @@ interface Props {
   showDate?: boolean
   shortBadge?: boolean
   leagueId?: string
+  leagueName?: string
 }
 
 export const CardMatch = ({
@@ -29,11 +30,19 @@ export const CardMatch = ({
   showDate,
   shortBadge,
   leagueId,
+  leagueName,
 }: Props) => {
   const from = fromQS || (typeof window !== 'undefined' ? window.location.search.slice(1) : '')
-  const href = `/football/partido/${generateSlug(fixture.localTeam.name)}-vs-${generateSlug(
-    fixture.visitorTeam.name
-  )}/${fixture.id}${leagueId ? `?leagueId=${leagueId}` : ''}${from && leagueId ? `&from=${from}` : from && !leagueId ? `?from=${from}` : ''}`
+
+  const baseHref = generateMatchUrl({
+    homeTeam: fixture.localTeam.name,
+    awayTeam: fixture.visitorTeam.name,
+    leagueName,
+    matchId: fixture.staticId,
+    leagueId: leagueId
+  })
+  
+  const href = from ? `${baseHref}?from=${from}` : baseHref
 
   const { isMatchFavorite, toggleFavoriteMatch } = useFavoriteStore()
   const isFavorite = isMatchFavorite(Number(fixture.id))
@@ -41,19 +50,15 @@ export const CardMatch = ({
   const handleFavoriteToggle = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
     e.preventDefault()
     e.stopPropagation()
-    toggleFavoriteMatch(fixture)
+    toggleFavoriteMatch(fixture as unknown as MatchInfo)
   }
-  console.log('fixture', fixture);
-
-  console.log('fixture.statusConfig', fixture.statusConfig);
-  
   
   const isFinished = fixture.statusConfig?.type === 'finished'
 
   return (
     <div
       className={cn(
-        'flex flex-col bg-card rounded-lg px-3 py-2 shadow-sm hover:shadow-md transition-all duration-200',
+        'flex flex-col bg-accent-foreground rounded-lg px-3 py-2 shadow-sm hover:shadow-md transition-all duration-200',
         isFavorite && 'favorite-border-bottom'
       )}>
       <Link href={href} prefetch={false} className="block relative">
@@ -70,7 +75,7 @@ export const CardMatch = ({
                   </h1>
                 </div>
               ) : (
-                <TagTime match={fixture} />
+                <TagTime match={fixture as unknown as MatchInfo} />
               )}
               <Button
                 variant="ghost"
@@ -146,7 +151,7 @@ export const CardMatch = ({
                 variant="outline"
                 className={`px-1 lg:px-2 py-1 h-5 lg:h-6 text-[9px] lg:text-xs font-semibold tracking-wide ${fixture.statusConfig?.className}`}>
                 <span className={`inline ${shortBadge ? 'md:inline' : 'md:hidden'}`}>
-                  {fixture.status}
+                  {fixture.statusConfig?.code}
                 </span>
                 <span className={`hidden ${shortBadge ? 'md:hidden' : 'md:inline'}`}>
                   {fixture.statusConfig?.label}

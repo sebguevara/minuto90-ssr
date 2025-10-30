@@ -53,7 +53,7 @@ export const STATUS_CONFIG: Record<string, StatusConfig> = {
   P: {
     label: 'PENALES',
     type: 'live',
-    code: 'P',
+    code: 'PEN',
     className: 'status-penalties',
   },
   SUSP: {
@@ -84,7 +84,7 @@ export const STATUS_CONFIG: Record<string, StatusConfig> = {
   AET: {
     label: 'EXTRATIEMPO',
     type: 'finished',
-    code: 'AET',
+    code: 'FT',
     className: 'status-finished',
   },
   PEN: {
@@ -151,7 +151,6 @@ export const processMatchData = (apiData: GoalServeFixturesResponse): GoalServeF
 
     matches.forEach((match: any) => {
       const statusString: string = match['@status']
-      const timerString: string = match['@timer']
       let configKey: string | undefined
 
       if (specialStatusMap[statusString]) {
